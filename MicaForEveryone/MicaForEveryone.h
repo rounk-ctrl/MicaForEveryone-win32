@@ -1,6 +1,10 @@
 #pragma once
 
 #include "resource.h"
+#include "framework.h"
+
+#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
+
 enum IMMERSIVE_HC_CACHE_MODE
 {
 	IHCM_USE_CACHED_VALUE,
@@ -67,6 +71,4 @@ using fnOpenNcThemeData = HTHEME(WINAPI*)(HWND hWnd, LPCWSTR pszClassList); // o
 // 1903 18362
 using fnShouldSystemUseDarkMode = bool (WINAPI*)(); // ordinal 138
 using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
-using fnIsDarkModeAllowedForApp = bool (WINAPI*)(); // ordinal 139
-
-
+using fnIsDarkModeAllowedForApp = bool (WINAPI*)(); // ordinal 

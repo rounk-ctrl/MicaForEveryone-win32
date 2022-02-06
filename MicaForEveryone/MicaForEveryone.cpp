@@ -8,7 +8,6 @@
 // functions
 #define MAX_LOADSTRING 100
 #define	WM_USER_SHELLICON WM_USER + 1
-#define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #define DWMWA_MICA_EFFECT 1029
 #define DWMWA_SYSTEMBACKDROP_TYPE 38
 
@@ -26,6 +25,7 @@ BOOL Acrylic = FALSE;
 BOOL Tabbed = FALSE;
 BOOL DefaultCol = TRUE;
 DWORD nice = TRUE;
+HWINEVENTHOOK hEvent;
 std::vector<HWND> hwndlist;
 MARGINS margins = { -1 };
 MENUITEMINFO mi = { 0 };
@@ -141,12 +141,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
 
     return RegisterClassExW(&wcex);
-}
-wchar_t* convertCharArrayToLPCWSTR(const char* charArray)
-{
-    wchar_t* wString = new wchar_t[32];
-    MultiByteToWideChar(CP_ACP, 0, charArray, -1, wString, 32);
-    return wString;
 }
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
@@ -453,7 +447,61 @@ void ShowContextMenu(HWND hwnd, POINT pt)
     }
 }
 
+VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
+{
+    if (dwEvent == EVENT_OBJECT_CREATE) {
+        if (DefaultCol) 
+        {
 
+        }
+        if (Light) 
+        {
+            nice = FALSE;
+            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+        }
+        if (Dark) 
+        {
+            nice = TRUE;
+            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+        }
+        if (DefaultBack) 
+        {
+            int value = 1;
+            DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+        }
+        if (Mica) 
+        {
+            if (os.dwBuildNumber == 22000)
+            {
+                nice = TRUE;
+                DwmSetWindowAttribute(hwnd, DWMWA_MICA_EFFECT, &nice, sizeof nice);
+            }
+            if (os.dwBuildNumber >= 22523)
+            {
+                int value = 2;
+                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+            }
+        }
+        if (Acrylic) 
+        {
+            if (os.dwBuildNumber < 22000)
+            {
+                SetWindowLongPtr(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP);
+                SetWindowBlur(hwnd);
+            }
+            else if (os.dwBuildNumber >= 22523)
+            {
+                int value = 3;
+                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+            }
+        }
+        if (Tabbed)
+        {
+            int value = 4;
+            DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+        }
+    }
+}
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -469,10 +517,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     switch (message)
     {
     case WM_CREATE: 
-    {
-
-    }
-    break;
+        hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
+            WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT);
+        break;
     case WM_USER_SHELLICON:
         // systray msg callback 
         switch (LOWORD(lParam))
@@ -502,6 +549,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
+        if (hEvent) UnhookWinEvent(hEvent);
         PostQuitMessage(0);
         break;
     default:

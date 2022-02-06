@@ -1,0 +1,8 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/MicaForEveryone/v16
+/MicaForEveryone/x64/Release
+/x64/Release
+/MicaForEveryone/MicaForEveryone.vcxproj.user
