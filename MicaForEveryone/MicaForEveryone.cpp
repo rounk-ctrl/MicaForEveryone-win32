@@ -450,6 +450,8 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 {
     if (dwEvent == EVENT_OBJECT_CREATE)
     {
+        if (IsWindow(hwnd))
+        {
             if (DefaultCol)
             {
 
@@ -501,7 +503,7 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
                 DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
             }
         }
-        
+    }
 }
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
