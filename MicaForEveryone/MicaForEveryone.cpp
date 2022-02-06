@@ -31,6 +31,7 @@ MARGINS margins = { -1 };
 MENUITEMINFO mi = { 0 };
 OSVERSIONINFOEX os;
 UINT menuItemId = 0;
+HICON hMainIcon;
 POINT ok;
 fnSetWindowCompositionAttribute SetWindowCompositionAttribute;
 fnSetPreferredAppMode SetPreferredAppMode;
@@ -156,7 +157,6 @@ HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_S
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
-   HICON hMainIcon;
    // SetWindowCompositionAttribute = (fnSetWindowCompositionAttribute)GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetWindowCompositionAttribute");
    SetPreferredAppMode = (fnSetPreferredAppMode)GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
    SetPreferredAppMode(ForceDark);
@@ -179,9 +179,9 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam) {
-    std::vector<HWND>& hwnds =
-         *reinterpret_cast<std::vector<HWND>*>(lParam);
-    hwnds.push_back(hwnd);
+        std::vector<HWND>& hwnds =
+            *reinterpret_cast<std::vector<HWND>*>(lParam);
+        hwnds.push_back(hwnd);
     return TRUE;
 }
 void SetWindowBlur(HWND hWnd)
@@ -218,7 +218,6 @@ void ShowContextMenu(HWND hwnd, POINT pt)
     HMENU hMenu = LoadMenu(hInst, MAKEINTRESOURCE(IDC_MICAFOREVERYONE));
     if (hMenu)
     {
-        
         HMENU hSubMenu = GetSubMenu(hMenu, 0);
         if (hSubMenu)
         {
@@ -449,58 +448,60 @@ void ShowContextMenu(HWND hwnd, POINT pt)
 
 VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
 {
-    if (dwEvent == EVENT_OBJECT_CREATE) {
-        if (DefaultCol) 
-        {
+    if (dwEvent == EVENT_OBJECT_CREATE)
+    {
+            if (DefaultCol)
+            {
 
-        }
-        if (Light) 
-        {
-            nice = FALSE;
-            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
-        }
-        if (Dark) 
-        {
-            nice = TRUE;
-            DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
-        }
-        if (DefaultBack) 
-        {
-            int value = 1;
-            DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-        }
-        if (Mica) 
-        {
-            if (os.dwBuildNumber == 22000)
+            }
+            if (Light)
+            {
+                nice = FALSE;
+                DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+            }
+            if (Dark)
             {
                 nice = TRUE;
-                DwmSetWindowAttribute(hwnd, DWMWA_MICA_EFFECT, &nice, sizeof nice);
+                DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
             }
-            if (os.dwBuildNumber >= 22523)
+            if (DefaultBack)
             {
-                int value = 2;
+                int value = 1;
+                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+            }
+            if (Mica)
+            {
+                if (os.dwBuildNumber == 22000)
+                {
+                    nice = TRUE;
+                    DwmSetWindowAttribute(hwnd, DWMWA_MICA_EFFECT, &nice, sizeof nice);
+                }
+                if (os.dwBuildNumber >= 22523)
+                {
+                    int value = 2;
+                    DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+                }
+            }
+            if (Acrylic)
+            {
+                if (os.dwBuildNumber < 22000)
+                {
+                    SetWindowLongPtr(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP);
+                    SetWindowBlur(hwnd);
+                }
+                else if (os.dwBuildNumber >= 22523)
+                {
+                    int value = 3;
+                    DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+                }
+            }
+            if (Tabbed)
+            {
+                int value = 4;
                 DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
             }
         }
-        if (Acrylic) 
-        {
-            if (os.dwBuildNumber < 22000)
-            {
-                SetWindowLongPtr(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP);
-                SetWindowBlur(hwnd);
-            }
-            else if (os.dwBuildNumber >= 22523)
-            {
-                int value = 3;
-                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-            }
-        }
-        if (Tabbed)
-        {
-            int value = 4;
-            DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-        }
-    }
+        
 }
 //
 //  FUNCTION: WndProc(HWND, UINT, WPARAM, LPARAM)
@@ -514,11 +515,13 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     RtlGetVersion(&os);
+    static UINT s_uTaskbarRestart;
     switch (message)
     {
     case WM_CREATE: 
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT);
+        s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
         break;
     case WM_USER_SHELLICON:
         // systray msg callback 
@@ -553,6 +556,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         PostQuitMessage(0);
         break;
     default:
+        if (message == s_uTaskbarRestart) {
+
+            hMainIcon = LoadIcon(hInst, (LPCTSTR)MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
+            nidApp.cbSize = sizeof(NOTIFYICONDATA);
+            nidApp.hWnd = (HWND)hWnd;
+            nidApp.uID = IDI_MICAFOREVERYONE;
+            nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+            nidApp.hIcon = hMainIcon;
+            nidApp.uCallbackMessage = WM_USER_SHELLICON;
+            nidApp.uVersion = NOTIFYICON_VERSION_4;
+            LoadString(hInst, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
+            Shell_NotifyIcon(NIM_ADD, &nidApp);
+        }
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
