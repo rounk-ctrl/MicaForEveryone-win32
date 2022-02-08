@@ -15,26 +15,6 @@
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
-NOTIFYICONDATA nidApp;
-BOOL Extend = FALSE;
-BOOL Dark = FALSE;
-BOOL Light = FALSE;
-BOOL Mica = FALSE;
-BOOL DefaultBack = TRUE;
-BOOL Acrylic = FALSE;
-BOOL Tabbed = FALSE;
-BOOL DefaultCol = TRUE;
-DWORD nice = TRUE;
-HWINEVENTHOOK hEvent;
-std::vector<HWND> hwndlist;
-MARGINS margins = { -1 };
-MENUITEMINFO mi = { 0 };
-OSVERSIONINFOEX os;
-UINT menuItemId = 0;
-HICON hMainIcon;
-POINT ok;
-fnSetWindowCompositionAttribute SetWindowCompositionAttribute;
-fnSetPreferredAppMode SetPreferredAppMode;
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
@@ -137,11 +117,25 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_MICAFOREVERYONE);
+    wcex.lpszMenuName   = NULL;
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
 
     return RegisterClassExW(&wcex);
+}
+BOOL TrayIcon(HWND hWnd)
+{
+    hMainIcon = LoadIcon(hInst, (LPCTSTR)MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
+    nidApp.cbSize = sizeof(NOTIFYICONDATA);
+    nidApp.hWnd = (HWND)hWnd;
+    nidApp.uID = IDI_MICAFOREVERYONE;
+    nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+    nidApp.hIcon = hMainIcon;
+    nidApp.uCallbackMessage = WM_USER_SHELLICON;
+    nidApp.uVersion = NOTIFYICON_VERSION_4;
+    LoadString(hInst, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
+    Shell_NotifyIcon(NIM_ADD, &nidApp);
+    return TRUE;
 }
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
@@ -157,26 +151,27 @@ HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_S
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
-   // SetWindowCompositionAttribute = (fnSetWindowCompositionAttribute)GetProcAddress(GetModuleHandleW(L"user32.dll"), "SetWindowCompositionAttribute");
+
    SetPreferredAppMode = (fnSetPreferredAppMode)GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
-   SetPreferredAppMode(ForceDark);
+   RefreshImmersiveColorPolicyState = reinterpret_cast<fnRefreshImmersiveColorPolicyState>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(104)));
+   AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
+   SetPreferredAppMode(PreferredAppMode::ForceDark);
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
    if (!hWnd)
    {
       return FALSE;
    }
-   hMainIcon = LoadIcon(hInstance, (LPCTSTR)MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
-   nidApp.cbSize = sizeof(NOTIFYICONDATA);
-   nidApp.hWnd = (HWND)hWnd;
-   nidApp.uID = IDI_MICAFOREVERYONE;
-   nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-   nidApp.hIcon = hMainIcon;
-   nidApp.uCallbackMessage = WM_USER_SHELLICON;
-   nidApp.uVersion = NOTIFYICON_VERSION_4;
-   LoadString(hInstance, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
-   Shell_NotifyIcon(NIM_ADD, &nidApp);
-   return TRUE;
+   TrayIcon(hWnd);
+
+   MSG msg;
+   // Main message loop:
+   while (GetMessageW(&msg, nullptr, 0, 0))
+   {
+       TranslateMessage(&msg);
+       DispatchMessageW(&msg);
+   }
+   return (int)msg.wParam;
 }
 BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam) {
         std::vector<HWND>& hwnds =
@@ -352,6 +347,7 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 {
                     DwmSetWindowAttribute(hwnds, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
                 }
+                
             }
             if (IDM_LIGHT == menuItemId)
             {
@@ -441,6 +437,10 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                     DwmSetWindowAttribute(hwnds, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
                 }
             }
+            if (IDM_GUI == menuItemId)
+            {
+                ShowWindow(hwnd, SW_SHOW);
+            }
             
         DestroyMenu(hMenu);
     }
@@ -516,15 +516,24 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    HBRUSH brush = CreateSolidBrush(darkBkColor);
     RtlGetVersion(&os);
     static UINT s_uTaskbarRestart;
     switch (message)
     {
     case WM_CREATE: 
+        AllowDarkModeForWindow(hWnd, true);
+        nice = TRUE;
+        DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
         break;
+    case WM_CLOSE:
+        ShowWindow(hWnd, SW_HIDE);
+        break;
+    case WM_ERASEBKGND:
+        SetClassLongPtr(hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);
     case WM_USER_SHELLICON:
         // systray msg callback 
         switch (LOWORD(lParam))
@@ -533,6 +542,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             GetCursorPos(&ok);
             EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
             ShowContextMenu(hWnd, ok);
+            return TRUE;
+        case WM_LBUTTONDOWN:
+            ShowWindow(hWnd, SW_SHOW);
             return TRUE;
         }
     case WM_COMMAND:
@@ -554,22 +566,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_DESTROY:
-        if (hEvent) UnhookWinEvent(hEvent);
+        UnhookWinEvent(hEvent);
         PostQuitMessage(0);
         break;
     default:
         if (message == s_uTaskbarRestart) {
-
-            hMainIcon = LoadIcon(hInst, (LPCTSTR)MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
-            nidApp.cbSize = sizeof(NOTIFYICONDATA);
-            nidApp.hWnd = (HWND)hWnd;
-            nidApp.uID = IDI_MICAFOREVERYONE;
-            nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-            nidApp.hIcon = hMainIcon;
-            nidApp.uCallbackMessage = WM_USER_SHELLICON;
-            nidApp.uVersion = NOTIFYICON_VERSION_4;
-            LoadString(hInst, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
-            Shell_NotifyIcon(NIM_ADD, &nidApp);
+            TrayIcon(hWnd);
         }
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -580,10 +582,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     BOOL ok = TRUE;
+    static HBRUSH hbrBkgnd = nullptr;
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
     {
     case WM_INITDIALOG:
+        SetWindowTheme(GetDlgItem(hDlg, IDOK), L"Explorer", nullptr);
+        SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
         return (INT_PTR)TRUE;
     case WM_COMMAND:
         if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
@@ -592,6 +597,35 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             return (INT_PTR)TRUE;
         }
         break;
+    case WM_CTLCOLORDLG:
+        return (INT_PTR)CreateSolidBrush(darkBkColor);
+    case WM_CTLCOLORSTATIC:
+        {
+            HDC hdc = reinterpret_cast<HDC>(wParam);
+            SetTextColor(hdc, darkTextColor);
+            SetBkColor(hdc, darkBkColor);
+            if (!hbrBkgnd)
+                hbrBkgnd = CreateSolidBrush(darkBkColor);
+            return reinterpret_cast<INT_PTR>(hbrBkgnd);
+        }
+        break;
+    case WM_DESTROY:
+        if (hbrBkgnd)
+        {
+            DeleteObject(hbrBkgnd);
+            hbrBkgnd = nullptr;
+        }
+        break;
+    case WM_THEMECHANGED:
+        {
+            nice = TRUE;
+            AllowDarkModeForWindow(hDlg, true);
+            DwmSetWindowAttribute(hDlg, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+            HWND hButton = GetDlgItem(hDlg, IDOK);
+            AllowDarkModeForWindow(hButton, true);
+            SendMessageW(hButton, WM_THEMECHANGED, 0, 0);
+            UpdateWindow(hDlg);
+        }
     }
     return (INT_PTR)FALSE;
 }
