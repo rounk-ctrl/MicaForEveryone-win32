@@ -81,3 +81,8 @@ POINT ok;
 fnSetPreferredAppMode SetPreferredAppMode;
 fnRefreshImmersiveColorPolicyState RefreshImmersiveColorPolicyState;
 fnAllowDarkModeForWindow AllowDarkModeForWindow;
+
+HWND Title;
+HFONT hFont;
+
+static HBRUSH hbrBkgnd = nullptr;

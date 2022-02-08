@@ -14,7 +14,6 @@
 #define IDC_MICAFOREVERYONE             109
 #define IDR_MAINFRAME                   128
 #define IDC_SYSLINK1                    1001
-#define ID_MENU_EXIT                    32771
 #define IDM_DEFAULT                     32794
 #define IDM_LIGHT                       32795
 #define IDM_DARK                        32796
@@ -27,12 +26,6 @@
 #define IDM_MICA                        32803
 #define IDM_ACRYLIC                     32804
 #define IDM_TABBED                      32805
-#define ID_MENU_ABOUT                   32806
-#define ID_MENU_TEST                    32810
-#define IDM_TEST                        32811
-#define IDM_TEST6                       32812
-#define ID_TITLEBARCOLORMODE_DEFAULT    32813
-#define ID_MENU_OPENGUI                 32814
 #define IDM_GUI                         32815
 #define IDC_STATIC                      -1
 

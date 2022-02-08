@@ -137,6 +137,11 @@ BOOL TrayIcon(HWND hWnd)
     Shell_NotifyIcon(NIM_ADD, &nidApp);
     return TRUE;
 }
+void DisableMaximizeButton(HWND hwnd)
+{
+    SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_MAXIMIZEBOX);
+}
+
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
 //
@@ -157,21 +162,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
    SetPreferredAppMode(PreferredAppMode::ForceDark);
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
+      CW_USEDEFAULT, CW_USEDEFAULT, 840, 470, nullptr, nullptr, hInstance, nullptr);
    if (!hWnd)
    {
       return FALSE;
    }
    TrayIcon(hWnd);
-
-   MSG msg;
-   // Main message loop:
-   while (GetMessageW(&msg, nullptr, 0, 0))
-   {
-       TranslateMessage(&msg);
-       DispatchMessageW(&msg);
-   }
-   return (int)msg.wParam;
+   DisableMaximizeButton(hWnd);
+   return TRUE;
 }
 BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam) {
         std::vector<HWND>& hwnds =
@@ -525,8 +523,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         AllowDarkModeForWindow(hWnd, true);
         nice = TRUE;
         DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+        Title = CreateWindowW(L"static", L"TITLE",
+            WS_CHILD | WS_VISIBLE | SS_LEFT,
+            20, 20, 450, 35,
+            hWnd, (HMENU)1, NULL, NULL);
+        ShowWindow(Title, SW_SHOW);
+        SetWindowText(Title, L"Settings");
+        hFont = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+        SendMessage(Title, WM_SETFONT, WPARAM(hFont), TRUE);
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
-            WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT);
+            WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
         break;
     case WM_CLOSE:
@@ -565,8 +571,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+    case WM_CTLCOLORSTATIC:
+    {
+        HDC hdc = reinterpret_cast<HDC>(wParam);
+        SetTextColor(hdc, darkTextColor);
+        SetBkColor(hdc, darkBkColor);
+        if (!hbrBkgnd)
+            hbrBkgnd = CreateSolidBrush(darkBkColor);
+        return reinterpret_cast<INT_PTR>(hbrBkgnd);
+    }
+        break;
     case WM_DESTROY:
-        UnhookWinEvent(hEvent);
+        if (hEvent) 
+            UnhookWinEvent(hEvent);
         PostQuitMessage(0);
         break;
     default:
@@ -582,7 +599,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     BOOL ok = TRUE;
-    static HBRUSH hbrBkgnd = nullptr;
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
     {
