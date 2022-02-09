@@ -373,18 +373,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
     {
+        InitCommonControls();
         AllowDarkModeForWindow(hWnd, true);
         ApplyDarkTitleBar(hWnd, TRUE);
-        Title = CreateWindowW(L"static", L"TITLE",
+        Title = CreateWindowW(L"static", L"",
             WS_CHILD | WS_VISIBLE | SS_LEFT,
-            20, 20, 450, 35,
+            20, 20, 150, 35,
             hWnd, (HMENU)1, NULL, NULL);
-        ShowWindow(Title, SW_SHOW);
+        hWndComboBox = CreateWindowW(WC_COMBOBOX, TEXT(""),
+            CBS_DROPDOWNLIST | CBS_HASSTRINGS | WS_CHILD | WS_OVERLAPPED | WS_VISIBLE,
+            20, 60, 150, 10, hWnd, (HMENU)1, NULL, NULL);
+        TCHAR Planets[8][8] =
+        {
+            TEXT("Default"), TEXT("Light"), TEXT("Dark")
+        };
+        TCHAR A[16];
+        int  k = 0;
+        memset(&A, 0, sizeof(A));
+        for (k = 0; k <= 2; k += 1)
+        {
+            wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Planets[k]);
+            SendMessage(hWndComboBox, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
+        }
+        SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
         SetWindowText(Title, L"Settings");
-        hFont = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-        SendMessage(Title, WM_SETFONT, WPARAM(hFont), TRUE);
+        hFontBold = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+        hFont = CreateFontW(18, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+        SendMessage(Title, WM_SETFONT, WPARAM(hFontBold), TRUE);
+        SendMessage(hWndComboBox, WM_SETFONT, WPARAM(hFont), TRUE);
         DwmExtendFrameIntoClientArea(hWnd, &margins);
         ApplyMica(hWnd);
+        AllowDarkModeForWindow(hWndComboBox, true);
+        UpdateWindow(hWnd);
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
@@ -436,6 +456,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return reinterpret_cast<INT_PTR>(hbrBkgnd);
     }
         break;
+    case WM_CTLCOLORLISTBOX:
+    {
+        HDC hdc = reinterpret_cast<HDC>(wParam);
+        SetTextColor(hdc, darkTextColor);
+        SetBkColor(hdc, darkBkColor);
+        if (!hbrBkgnd)
+            hbrBkgnd = CreateSolidBrush(darkBkColor);
+        return reinterpret_cast<INT_PTR>(hbrBkgnd);
+    }
+    break;
     case WM_DESTROY:
         if (hEvent) 
             UnhookWinEvent(hEvent);

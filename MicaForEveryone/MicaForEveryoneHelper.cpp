@@ -39,7 +39,9 @@ HICON hMainIcon;
 POINT ok;
 
 HWND Title;
+HFONT hFontBold;
 HFONT hFont;
+HWND hWndComboBox;
 
 
 
@@ -75,7 +77,7 @@ BOOL ApplyMica(HWND hwnd)
 
 BOOL ApplyAcrylic(HWND hwnd)
 {
-    if (os.dwBuildNumber < 22000)
+    if (os.dwBuildNumber <= 22000)
     {
         SetWindowBlur(hwnd);
     }

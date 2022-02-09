@@ -21,4 +21,4 @@
 #include <Uxtheme.h>
 #pragma comment(lib, "Uxtheme.lib")
 #include <vsstyle.h>
-
+#pragma comment(lib, "Comctl32.lib")

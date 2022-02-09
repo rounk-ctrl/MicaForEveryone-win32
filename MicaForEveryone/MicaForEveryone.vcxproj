@@ -159,7 +159,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="MicaForEveryone.ico" />
-    <Image Include="small.ico" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="MicaForEveryone.exe.manifest" />
