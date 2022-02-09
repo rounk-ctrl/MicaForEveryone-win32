@@ -530,7 +530,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         ShowWindow(Title, SW_SHOW);
         SetWindowText(Title, L"Settings");
         hFont = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-        SendMessage(Title, WM_SETFONT, WPARAM(hFont), TRUE);
+        SendMessage(Title, WM_SETFONT, WPARAM(hFont), TRUE); 
+        DwmExtendFrameIntoClientArea(hWnd, &margins);
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
@@ -594,23 +595,37 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
-
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     BOOL ok = TRUE;
     UNREFERENCED_PARAMETER(lParam);
+    DWORD dwStyle;
     switch (message)
     {
     case WM_INITDIALOG:
+    {
         SetWindowTheme(GetDlgItem(hDlg, IDOK), L"Explorer", nullptr);
         SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
+        HFONT hOrigFont = (HFONT)SendMessage(GetDlgItem(hDlg, IDC_STATIC_LINK), WM_GETFONT, 0, 0);
+        LOGFONT lf;
+        GetObject(hOrigFont, sizeof(lf), &lf);
+        lf.lfUnderline = TRUE;
+        HFONT hFont = CreateFontIndirect(&lf);
+        SendMessage(GetDlgItem(hDlg, IDC_STATIC_LINK), WM_SETFONT, WPARAM(hFont), TRUE);
+    }
         return (INT_PTR)TRUE;
     case WM_COMMAND:
         if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL)
         {
             EndDialog(hDlg, LOWORD(wParam));
             return (INT_PTR)TRUE;
+        }
+        switch (LOWORD(wParam))
+        {
+        case IDC_STATIC_LINK:
+            ShellExecute(NULL, L"open", L"https://github.com/minusium/MicaForEveryone", NULL, NULL, SW_SHOWNORMAL);
+            return TRUE;
         }
         break;
     case WM_CTLCOLORDLG:
@@ -622,9 +637,25 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             SetBkColor(hdc, darkBkColor);
             if (!hbrBkgnd)
                 hbrBkgnd = CreateSolidBrush(darkBkColor);
+            if ((HWND)lParam == GetDlgItem(hDlg, IDC_STATIC_LINK))
+            {
+                SetTextColor((HDC)wParam, RGB(166, 216, 255));
+            }
             return reinterpret_cast<INT_PTR>(hbrBkgnd);
+
         }
         break;
+    case WM_SETCURSOR:
+    {
+        if ((HWND)(wParam) == ::GetDlgItem(hDlg, IDC_STATIC_LINK))
+        {
+            HCURSOR hCursorHelp = ::LoadCursor(NULL, IDC_HAND);
+            ::SetCursor(hCursorHelp);
+            ::SetWindowLongPtr(hDlg, DWLP_MSGRESULT, TRUE);
+            return TRUE;  // indicate we processed this message
+        }
+        return FALSE;  // do default handling
+    }
     case WM_DESTROY:
         if (hbrBkgnd)
         {
