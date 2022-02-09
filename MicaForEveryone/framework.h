@@ -16,5 +16,9 @@
 #include <shellapi.h>
 #include <vector>
 #include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 #include <stdio.h>
 #include <Uxtheme.h>
+#pragma comment(lib, "Uxtheme.lib")
+#include <vsstyle.h>
+

@@ -2,6 +2,8 @@
 
 #include "resource.h"
 #include "framework.h"
+#include "UAHMenuBar.h"
+#include "IatHook.h"
 
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 
@@ -86,3 +88,4 @@ HWND Title;
 HFONT hFont;
 
 static HBRUSH hbrBkgnd = nullptr;
+static HTHEME g_menuTheme = nullptr;

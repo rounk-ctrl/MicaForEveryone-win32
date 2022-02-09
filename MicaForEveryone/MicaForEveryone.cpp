@@ -64,7 +64,108 @@ BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
     FreeLibrary(hMod);
     return TRUE;
 }
+// processes messages related to UAH / custom menubar drawing.
+// return true if handled, false to continue with normal processing in your wndproc
+bool UAHDarkModeWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam, LRESULT* lr)
+{
+    switch (message)
+    {
+    case WM_UAHDRAWMENU:
+    {
+        UAHMENU* pUDM = (UAHMENU*)lParam;
+        RECT rc = { 0 };
 
+        // get the menubar rect
+        {
+            MENUBARINFO mbi = { sizeof(mbi) };
+            GetMenuBarInfo(hWnd, OBJID_MENU, 0, &mbi);
+
+            RECT rcWindow;
+            GetWindowRect(hWnd, &rcWindow);
+
+            // the rcBar is offset by the window rect
+            rc = mbi.rcBar;
+            OffsetRect(&rc, -rcWindow.left, -rcWindow.top);
+
+            rc.top -= 1;
+        }
+
+        if (!g_menuTheme) {
+            g_menuTheme = OpenThemeData(hWnd, L"Menu");
+        }
+
+        DrawThemeBackground(g_menuTheme, pUDM->hdc, MENU_POPUPITEM, MPI_NORMAL, &rc, nullptr);
+
+        return true;
+    }
+    case WM_UAHDRAWMENUITEM:
+    {
+        UAHDRAWMENUITEM* pUDMI = (UAHDRAWMENUITEM*)lParam;
+
+        // get the menu item string
+        wchar_t menuString[256] = { 0 };
+        MENUITEMINFO mii = { sizeof(mii), MIIM_STRING };
+        {
+            mii.dwTypeData = menuString;
+            mii.cch = (sizeof(menuString) / 2) - 1;
+
+            GetMenuItemInfo(pUDMI->um.hmenu, pUDMI->umi.iPosition, TRUE, &mii);
+        }
+
+        // get the item state for drawing
+
+        DWORD dwFlags = DT_CENTER | DT_SINGLELINE | DT_VCENTER;
+
+        int iTextStateID = 0;
+        int iBackgroundStateID = 0;
+        {
+            if ((pUDMI->dis.itemState & ODS_INACTIVE) | (pUDMI->dis.itemState & ODS_DEFAULT)) {
+                // normal display
+                iTextStateID = MPI_NORMAL;
+                iBackgroundStateID = MPI_NORMAL;
+            }
+            if (pUDMI->dis.itemState & ODS_HOTLIGHT) {
+                // hot tracking
+                iTextStateID = MPI_HOT;
+                iBackgroundStateID = MPI_HOT;
+            }
+            if (pUDMI->dis.itemState & ODS_SELECTED) {
+                // clicked -- MENU_POPUPITEM has no state for this, though MENU_BARITEM does
+                iTextStateID = MPI_HOT;
+                iBackgroundStateID = MPI_HOT;
+            }
+            if ((pUDMI->dis.itemState & ODS_GRAYED) || (pUDMI->dis.itemState & ODS_DISABLED)) {
+                // disabled / grey text
+                iTextStateID = MPI_DISABLED;
+                iBackgroundStateID = MPI_DISABLED;
+            }
+            if (pUDMI->dis.itemState & ODS_NOACCEL) {
+                dwFlags |= DT_HIDEPREFIX;
+            }
+        }
+
+        if (!g_menuTheme) {
+            g_menuTheme = OpenThemeData(hWnd, L"Menu");
+        }
+
+        DrawThemeBackground(g_menuTheme, pUDMI->um.hdc, MENU_POPUPITEM, iBackgroundStateID, &pUDMI->dis.rcItem, nullptr);
+        DrawThemeText(g_menuTheme, pUDMI->um.hdc, MENU_POPUPITEM, iTextStateID, menuString, mii.cch, dwFlags, 0, &pUDMI->dis.rcItem);
+
+        return true;
+    }
+    case WM_THEMECHANGED:
+    {
+        if (g_menuTheme) {
+            CloseThemeData(g_menuTheme);
+            g_menuTheme = nullptr;
+        }
+        // continue processing in main wndproc
+        return false;
+    }
+    default:
+        return false;
+    }
+}
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
@@ -117,7 +218,7 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIcon          = LoadIcon(hInstance, MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
     wcex.hCursor        = LoadCursor(nullptr, IDC_ARROW);
     wcex.hbrBackground  = (HBRUSH)(COLOR_WINDOW+1);
-    wcex.lpszMenuName   = NULL;
+    wcex.lpszMenuName   = MAKEINTRESOURCE(IDC_MICAFOREVERYONE);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
 
@@ -516,10 +617,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HBRUSH brush = CreateSolidBrush(darkBkColor);
     RtlGetVersion(&os);
-    static UINT s_uTaskbarRestart;
+    static UINT s_uTaskbarRestart; 
+    LRESULT lr = 0;
+    if (UAHDarkModeWndProc(hWnd, message, wParam, lParam, &lr)) {
+        return lr;
+    }
     switch (message)
     {
-    case WM_CREATE: 
+    case WM_CREATE:
+    {
         AllowDarkModeForWindow(hWnd, true);
         nice = TRUE;
         DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
@@ -530,11 +636,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         ShowWindow(Title, SW_SHOW);
         SetWindowText(Title, L"Settings");
         hFont = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-        SendMessage(Title, WM_SETFONT, WPARAM(hFont), TRUE); 
+        SendMessage(Title, WM_SETFONT, WPARAM(hFont), TRUE);
         DwmExtendFrameIntoClientArea(hWnd, &margins);
+        if (os.dwBuildNumber == 22000)
+        {
+            nice = TRUE;
+            DwmSetWindowAttribute(hWnd, DWMWA_MICA_EFFECT, &nice, sizeof nice);
+        }
+        if (os.dwBuildNumber >= 22523)
+        {
+            int value = 2;
+            DwmSetWindowAttribute(hWnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+        }
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
+    }
         break;
     case WM_CLOSE:
         ShowWindow(hWnd, SW_HIDE);
@@ -598,9 +715,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 // Message handler for about box.
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    BOOL ok = TRUE;
     UNREFERENCED_PARAMETER(lParam);
-    DWORD dwStyle;
     switch (message)
     {
     case WM_INITDIALOG:
@@ -625,7 +740,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case IDC_STATIC_LINK:
             ShellExecute(NULL, L"open", L"https://github.com/minusium/MicaForEveryone", NULL, NULL, SW_SHOWNORMAL);
-            return TRUE;
+            break;
         }
         break;
     case WM_CTLCOLORDLG:
@@ -652,9 +767,9 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             HCURSOR hCursorHelp = ::LoadCursor(NULL, IDC_HAND);
             ::SetCursor(hCursorHelp);
             ::SetWindowLongPtr(hDlg, DWLP_MSGRESULT, TRUE);
-            return TRUE;  // indicate we processed this message
+            return TRUE;
         }
-        return FALSE;  // do default handling
+        return FALSE;
     }
     case WM_DESTROY:
         if (hbrBkgnd)
