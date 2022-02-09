@@ -13,7 +13,6 @@
 #define IDI_SMALL                       108
 #define IDC_MICAFOREVERYONE             109
 #define IDR_MAINFRAME                   128
-#define IDR_MENU1                       130
 #define IDC_SYSLINK1                    1001
 #define IDC_STATIC_LINK                 1003
 #define IDC_STATIC_GIT                  1004
@@ -30,7 +29,6 @@
 #define IDM_ACRYLIC                     32804
 #define IDM_TABBED                      32805
 #define IDM_GUI                         32815
-#define ID_HELP_ABOUT                   32816
 #define IDC_STATIC                      -1
 
 // Next default values for new objects

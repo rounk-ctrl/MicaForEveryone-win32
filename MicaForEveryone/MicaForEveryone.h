@@ -70,7 +70,7 @@ OSVERSIONINFOEX os;
 UINT menuItemId = 0;
 
 // Dark mode text and background color
-constexpr COLORREF darkBkColor = 0x202020;
+constexpr COLORREF darkBkColor = 0x000000;
 constexpr COLORREF darkTextColor = 0xFFFFFF;
 
 // icon
