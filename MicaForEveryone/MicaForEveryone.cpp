@@ -3,13 +3,9 @@
 
 #include "framework.h"
 #include "MicaForEveryone.h"
+#include "MicaForEveryoneHelper.h"
 #include <string>
 
-// functions
-#define MAX_LOADSTRING 100
-#define	WM_USER_SHELLICON WM_USER + 1
-#define DWMWA_MICA_EFFECT 1029
-#define DWMWA_SYSTEMBACKDROP_TYPE 38
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -22,48 +18,7 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-typedef void (WINAPI* RtlGetVersion_FUNC) (OSVERSIONINFOEXW*);
 
-BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
-    HMODULE hMod;
-    RtlGetVersion_FUNC func;
-#ifdef UNICODE
-    OSVERSIONINFOEXW* osw = os;
-#else
-    OSVERSIONINFOEXW o;
-    OSVERSIONINFOEXW* osw = &o;
-#endif
-
-    hMod = LoadLibrary(TEXT("ntdll.dll"));
-    if (hMod) {
-        func = (RtlGetVersion_FUNC)GetProcAddress(hMod, "RtlGetVersion");
-        if (func == 0) {
-            FreeLibrary(hMod);
-            return FALSE;
-        }
-        ZeroMemory(osw, sizeof(*osw));
-        osw->dwOSVersionInfoSize = sizeof(*osw);
-        func(osw);
-#ifndef UNICODE
-        os->dwBuildNumber = osw->dwBuildNumber;
-        os->dwMajorVersion = osw->dwMajorVersion;
-        os->dwMinorVersion = osw->dwMinorVersion;
-        os->dwPlatformId = osw->dwPlatformId;
-        os->dwOSVersionInfoSize = sizeof(*os);
-        DWORD sz = sizeof(os->szCSDVersion);
-        WCHAR* src = osw->szCSDVersion;
-        unsigned char* dtc = (unsigned char*)os->szCSDVersion;
-        while (*src)
-            *Dtc++ = (unsigned char)*src++;
-        *Dtc = '\ 0';
-#endif
-
-    }
-    else
-        return FALSE;
-    FreeLibrary(hMod);
-    return TRUE;
-}
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
@@ -122,24 +77,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 
     return RegisterClassExW(&wcex);
 }
-BOOL TrayIcon(HWND hWnd)
-{
-    hMainIcon = LoadIcon(hInst, (LPCTSTR)MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
-    nidApp.cbSize = sizeof(NOTIFYICONDATA);
-    nidApp.hWnd = (HWND)hWnd;
-    nidApp.uID = IDI_MICAFOREVERYONE;
-    nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-    nidApp.hIcon = hMainIcon;
-    nidApp.uCallbackMessage = WM_USER_SHELLICON;
-    nidApp.uVersion = NOTIFYICON_VERSION_4;
-    LoadString(hInst, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
-    Shell_NotifyIcon(NIM_ADD, &nidApp);
-    return TRUE;
-}
-void DisableMaximizeButton(HWND hwnd)
-{
-    SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_MAXIMIZEBOX);
-}
 
 //
 //   FUNCTION: InitInstance(HINSTANCE, int)
@@ -166,44 +103,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    {
       return FALSE;
    }
-   TrayIcon(hWnd);
+   TrayIcon(hWnd, hInst);
    DisableMaximizeButton(hWnd);
    return TRUE;
 }
 BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam) {
-        std::vector<HWND>& hwnds =
-            *reinterpret_cast<std::vector<HWND>*>(lParam);
-        hwnds.push_back(hwnd);
+    std::vector<HWND>& hwnds =
+        *reinterpret_cast<std::vector<HWND>*>(lParam);
+    hwnds.push_back(hwnd);
     return TRUE;
-}
-void SetWindowBlur(HWND hWnd)
-{
-    const HINSTANCE hModule = LoadLibrary(TEXT("user32.dll"));
-    if (hModule)
-    {
-        struct ACCENTPOLICY
-        {
-            int nAccentState;
-            int nFlags;
-            int nColor;
-            int nAnimationId;
-        };
-        struct WINCOMPATTRDATA
-        {
-            int nAttribute;
-            PVOID pData;
-            ULONG ulDataSize;
-        };
-        typedef BOOL(WINAPI* pSetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
-        const pSetWindowCompositionAttribute SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(hModule, "SetWindowCompositionAttribute");
-        if (SetWindowCompositionAttribute)
-        {
-            ACCENTPOLICY policy = { 3, 0, 0, 0 };
-            WINCOMPATTRDATA data = { 19, &policy, sizeof(ACCENTPOLICY) }; // WCA_ACCENT_POLICY=19
-            SetWindowCompositionAttribute(hWnd, &data);
-        }
-        FreeLibrary(hModule);
-    }
 }
 void ShowContextMenu(HWND hwnd, POINT pt)
 {
@@ -339,10 +247,9 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultCol = FALSE;
                 Dark = TRUE;
                 Light = FALSE;
-                nice = TRUE;
                 for (const HWND& hwnds : hwndlist)
                 {
-                    DwmSetWindowAttribute(hwnds, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+                    ApplyDarkTitleBar(hwnds, TRUE);
                 }
                 
             }
@@ -351,10 +258,9 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultCol = FALSE;
                 Light = TRUE;
                 Dark = FALSE;
-                nice = FALSE;
                 for (const HWND& hwnds : hwndlist)
                 {
-                    DwmSetWindowAttribute(hwnds, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+                    ApplyDarkTitleBar(hwnds, FALSE);
                 }
             }
             if (IDM_DEFAULTCOL == menuItemId)
@@ -369,21 +275,9 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultBack = FALSE;
                 Acrylic = FALSE;
                 Tabbed = FALSE;
-                if (os.dwBuildNumber == 22000)
+                for (const HWND& hwnds : hwndlist) 
                 {
-                    nice = TRUE;
-                    for (const HWND& hwnds : hwndlist)
-                    {
-                        DwmSetWindowAttribute(hwnds, DWMWA_MICA_EFFECT, &nice, sizeof nice);
-                    }
-                }
-                if (os.dwBuildNumber >= 22523)
-                {
-                    int value = 2;
-                    for (const HWND& hwnds : hwndlist)
-                    {
-                        DwmSetWindowAttribute(hwnds, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-                    }
+                    ApplyMica(hwnds);
                 }
             }
             if (IDM_ACRYLIC == menuItemId)
@@ -392,21 +286,9 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 Mica = FALSE;
                 Acrylic = TRUE;
                 Tabbed = FALSE;
-                int value = 3;
-
-                if (os.dwBuildNumber < 22000)
+                for (const HWND& hwnds : hwndlist)
                 {
-                    for (const HWND& hwnds : hwndlist)
-                    {
-                        SetWindowBlur(hwnds);
-                    }
-                }
-                else if (os.dwBuildNumber >= 22523)
-                {
-                    for (const HWND& hwnds : hwndlist)
-                    {
-                        DwmSetWindowAttribute(hwnds, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-                    }
+                    ApplyAcrylic(hwnds);
                 }
             }
             if (IDM_TABBED == menuItemId)
@@ -415,10 +297,9 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultBack = FALSE;
                 Acrylic = FALSE;
                 Tabbed = TRUE;
-                int value = 4;
                 for (const HWND& hwnds : hwndlist)
                 {
-                    DwmSetWindowAttribute(hwnds, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+                    ApplyTabbed(hwnds);
                 }
             }
             if (IDM_DEFAULTBACK == menuItemId)
@@ -427,10 +308,9 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultBack = TRUE;
                 Acrylic = FALSE;
                 Tabbed = FALSE;
-                int value = 1;
                 for (const HWND& hwnds : hwndlist)
                 {
-                    DwmSetWindowAttribute(hwnds, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+                    ApplyNoMaterial(hwnds);
                 }
             }
             if (IDM_GUI == menuItemId)
@@ -448,50 +328,29 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
     {
         if (IsWindow(hwnd))
         {
-            if (DefaultCol)
-            {
-
-            }
             if (Light)
             {
-                nice = FALSE;
-                DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+                ApplyDarkTitleBar(hwnd, FALSE);
             }
             if (Dark)
             {
-                nice = TRUE;
-                DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+                ApplyDarkTitleBar(hwnd, TRUE);
             }
             if (DefaultBack)
             {
-                int value = 1;
-                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+                SetSystemBackdropType(hwnd, SystemBackdropType::Auto);
             }
             if (Mica)
             {
-                if (os.dwBuildNumber == 22000)
-                {
-                    nice = TRUE;
-                    DwmSetWindowAttribute(hwnd, DWMWA_MICA_EFFECT, &nice, sizeof nice);
-                }
-                if (os.dwBuildNumber >= 22523)
-                {
-                    int value = 2;
-                    DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-                }
+                ApplyMica(hwnd);
             }
             if (Acrylic)
             {
-                if (os.dwBuildNumber >= 22523)
-                {
-                    int value = 3;
-                    DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-                }
+                ApplyAcrylic(hwnd);
             }
             if (Tabbed)
             {
-                int value = 4;
-                DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+                ApplyTabbed(hwnd);
             }
         }
     }
@@ -515,8 +374,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
     {
         AllowDarkModeForWindow(hWnd, true);
-        nice = TRUE;
-        DwmSetWindowAttribute(hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+        ApplyDarkTitleBar(hWnd, TRUE);
         Title = CreateWindowW(L"static", L"TITLE",
             WS_CHILD | WS_VISIBLE | SS_LEFT,
             20, 20, 450, 35,
@@ -526,16 +384,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hFont = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
         SendMessage(Title, WM_SETFONT, WPARAM(hFont), TRUE);
         DwmExtendFrameIntoClientArea(hWnd, &margins);
-        if (os.dwBuildNumber == 22000)
-        {
-            nice = TRUE;
-            DwmSetWindowAttribute(hWnd, DWMWA_MICA_EFFECT, &nice, sizeof nice);
-        }
-        if (os.dwBuildNumber >= 22523)
-        {
-            int value = 2;
-            DwmSetWindowAttribute(hWnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
-        }
+        ApplyMica(hWnd);
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
@@ -590,11 +439,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         if (hEvent) 
             UnhookWinEvent(hEvent);
+        FreeLibrary(hUxtheme);
         PostQuitMessage(0);
         break;
     default:
         if (message == s_uTaskbarRestart) {
-            TrayIcon(hWnd);
+            TrayIcon(hWnd, hInst);
         }
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
@@ -668,9 +518,8 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     case WM_THEMECHANGED:
         {
-            nice = TRUE;
             AllowDarkModeForWindow(hDlg, true);
-            DwmSetWindowAttribute(hDlg, DWMWA_USE_IMMERSIVE_DARK_MODE, &nice, sizeof nice);
+            ApplyDarkTitleBar(hDlg, TRUE);
             HWND hButton = GetDlgItem(hDlg, IDOK);
             AllowDarkModeForWindow(hButton, true);
             SendMessageW(hButton, WM_THEMECHANGED, 0, 0);

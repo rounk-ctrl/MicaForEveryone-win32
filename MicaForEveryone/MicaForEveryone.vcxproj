@@ -146,12 +146,13 @@
     <ClInclude Include="framework.h" />
     <ClInclude Include="IatHook.h" />
     <ClInclude Include="MicaForEveryone.h" />
+    <ClInclude Include="MicaForEveryoneHelper.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="UAHMenuBar.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MicaForEveryone.cpp" />
+    <ClCompile Include="MicaForEveryoneHelper.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MicaForEveryone.rc" />
