@@ -398,7 +398,6 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 {
                     for (const HWND& hwnds : hwndlist)
                     {
-                        SetWindowLongPtr(hwnds, GWL_EXSTYLE, GetWindowLong(hwnds, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP);
                         SetWindowBlur(hwnds);
                     }
                 }
@@ -483,12 +482,7 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
             }
             if (Acrylic)
             {
-                if (os.dwBuildNumber < 22000)
-                {
-                    SetWindowLongPtr(hwnd, GWL_EXSTYLE, GetWindowLong(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_NOREDIRECTIONBITMAP);
-                    SetWindowBlur(hwnd);
-                }
-                else if (os.dwBuildNumber >= 22523)
+                if (os.dwBuildNumber >= 22523)
                 {
                     int value = 3;
                     DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
