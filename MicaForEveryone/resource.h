@@ -13,6 +13,7 @@
 #define IDI_SMALL                       108
 #define IDC_MICAFOREVERYONE             109
 #define IDR_MAINFRAME                   128
+#define IDR_MENU1                       130
 #define IDC_SYSLINK1                    1001
 #define IDC_STATIC_LINK                 1003
 #define IDC_STATIC_GIT                  1004
@@ -29,6 +30,7 @@
 #define IDM_ACRYLIC                     32804
 #define IDM_TABBED                      32805
 #define IDM_GUI                         32815
+#define ID_HELP_ABOUT                   32816
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -36,8 +38,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
-#define _APS_NEXT_RESOURCE_VALUE        130
-#define _APS_NEXT_COMMAND_VALUE         32816
+#define _APS_NEXT_RESOURCE_VALUE        131
+#define _APS_NEXT_COMMAND_VALUE         32817
 #define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           110
 #endif
