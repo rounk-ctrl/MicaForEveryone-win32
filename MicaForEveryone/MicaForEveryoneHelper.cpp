@@ -42,7 +42,9 @@ HWND Title;
 HFONT hFontBold;
 HFONT hFont;
 HWND hWndComboBox;
-
+HWND TitleBarText;
+HWND ColorText;
+HWND ExtendText;
 
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode)

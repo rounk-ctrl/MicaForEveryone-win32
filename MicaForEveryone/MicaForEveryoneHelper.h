@@ -40,6 +40,9 @@ extern HWND Title;
 extern HFONT hFontBold;
 extern HFONT hFont;
 extern HWND hWndComboBox;
+extern HWND TitleBarText;
+extern HWND ColorText;
+extern HWND ExtendText;
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode);
 BOOL CobaltMicaEffect(HWND hwnd, BOOL allow);
