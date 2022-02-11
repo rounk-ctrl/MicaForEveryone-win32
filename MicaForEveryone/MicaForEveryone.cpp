@@ -88,6 +88,26 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        create and display the main program window.
 //
 HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
+int IsExplorerDarkTheme()
+{
+    RegOpenKeyEx(
+        HKEY_CURRENT_USER,
+        L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+        0, KEY_READ, &hKeyPersonalization
+    );
+    DWORD dwBufferSize(sizeof(DWORD));
+    DWORD nResult(0);
+    LONG nError = RegQueryValueEx(
+        hKeyPersonalization,
+        L"AppsUseLightTheme",
+        0,
+        NULL,
+        reinterpret_cast<LPBYTE>(&nResult),
+        &dwBufferSize
+    );
+    return ERROR_SUCCESS == nError ? !nResult : FALSE;
+}
+int DarkThemeEnabled;
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
@@ -95,9 +115,14 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    SetPreferredAppMode = (fnSetPreferredAppMode)GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
    RefreshImmersiveColorPolicyState = reinterpret_cast<fnRefreshImmersiveColorPolicyState>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(104)));
    AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
-   SetPreferredAppMode(PreferredAppMode::ForceDark);
+   DarkThemeEnabled = IsExplorerDarkTheme();
+   if (DarkThemeEnabled)
+   {
+       SetPreferredAppMode(PreferredAppMode::ForceDark);
+   }
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, CW_USEDEFAULT, 840, 470, nullptr, nullptr, hInstance, nullptr);
+   
    if (!hWnd)
    {
       return FALSE;
@@ -460,10 +485,13 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_INITDIALOG:
     {
-        DwmExtendFrameIntoClientArea(hDlg, &margins);
         ApplyMica(hDlg);
-        SetWindowTheme(GetDlgItem(hDlg, IDOK), L"Explorer", nullptr);
-        SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
+        if (DarkThemeEnabled)
+        {
+            SetWindowTheme(GetDlgItem(hDlg, IDOK), L"Explorer", nullptr);
+            DwmExtendFrameIntoClientArea(hDlg, &margins);
+            SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
+        }
         HFONT hOrigFont = (HFONT)SendMessage(GetDlgItem(hDlg, IDC_STATIC_LINK), WM_GETFONT, 0, 0);
         LOGFONT lf;
         GetObject(hOrigFont, sizeof(lf), &lf);
@@ -486,8 +514,17 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_CTLCOLORDLG:
-        return (INT_PTR)CreateSolidBrush(darkBkColor);
+        if (DarkThemeEnabled)
+        {
+            return (INT_PTR)CreateSolidBrush(darkBkColor);
+        }
     case WM_CTLCOLORSTATIC:
+    {
+        if ((HWND)lParam == GetDlgItem(hDlg, IDC_STATIC_LINK))
+        {
+            SetTextColor((HDC)wParam, RGB(166, 216, 255));
+        }
+        if (DarkThemeEnabled)
         {
             HDC hdc = reinterpret_cast<HDC>(wParam);
             SetTextColor(hdc, darkTextColor);
@@ -499,9 +536,9 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
                 SetTextColor((HDC)wParam, RGB(166, 216, 255));
             }
             return reinterpret_cast<INT_PTR>(hbrBkgnd);
-
         }
-        break;
+    }
+    break;
     case WM_SETCURSOR:
     {
         if ((HWND)(wParam) == ::GetDlgItem(hDlg, IDC_STATIC_LINK))
@@ -521,6 +558,8 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
     case WM_THEMECHANGED:
+    {
+        if (DarkThemeEnabled)
         {
             AllowDarkModeForWindow(hDlg, true);
             ApplyDarkTitleBar(hDlg, TRUE);
@@ -529,6 +568,7 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             SendMessageW(hButton, WM_THEMECHANGED, 0, 0);
             UpdateWindow(hDlg);
         }
+    }
     }
     return (INT_PTR)FALSE;
 }

@@ -35,6 +35,7 @@ extern OSVERSIONINFOEX os;
 extern UINT menuItemId;
 extern HICON hMainIcon;
 extern POINT ok;
+extern HKEY hKeyPersonalization;
 
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode);

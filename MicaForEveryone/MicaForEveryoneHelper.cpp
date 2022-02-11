@@ -37,6 +37,7 @@ HICON hMainIcon;
 
 // point used to spawn the menu where your cursor is
 POINT ok;
+HKEY hKeyPersonalization;
 
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode)

@@ -11,6 +11,9 @@ constexpr COLORREF darkBkColor = 0x000000;
 constexpr COLORREF darkTextColor = 0xFFFFFF;
 static HBRUSH hbrBkgnd = nullptr;
 
+constexpr COLORREF lightBkColor = 0xFFFFFF;
+constexpr COLORREF lightTextColor = 0x000000;
+
 enum IMMERSIVE_HC_CACHE_MODE
 {
 	IHCM_USE_CACHED_VALUE,
