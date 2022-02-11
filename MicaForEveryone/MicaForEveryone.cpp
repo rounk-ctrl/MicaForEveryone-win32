@@ -18,7 +18,6 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
-
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
@@ -366,6 +365,8 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    HBRUSH hBrush;
+    hBrush = CreateSolidBrush(RGB(0, 0, 0));
     HBRUSH brush = CreateSolidBrush(darkBkColor);
     RtlGetVersion(&os);
     static UINT s_uTaskbarRestart; 
@@ -373,56 +374,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
     {
-        InitCommonControls();
         AllowDarkModeForWindow(hWnd, true);
         ApplyDarkTitleBar(hWnd, TRUE);
-        Title = CreateWindowW(L"static", L"",
-            WS_CHILD | WS_VISIBLE | SS_LEFT,
-            20, 20, 150, 35,
-            hWnd, (HMENU)1, NULL, NULL);
-
-        TitleBarText = CreateWindowW(L"static", L"",
-            WS_CHILD | WS_VISIBLE | SS_LEFT,
-            20, 70, 150, 35,
-            hWnd, (HMENU)1, NULL, NULL);
-
-        ColorText = CreateWindowW(L"static", L"",
-            WS_CHILD | WS_VISIBLE | SS_LEFT,
-            20, 100, 150, 35,
-            hWnd, (HMENU)1, NULL, NULL);
-        hWndComboBox = CreateWindowW(WC_COMBOBOX, TEXT(""),
-            CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE,
-            200, 70, 150, 10, hWnd, (HMENU)1, NULL, NULL);
-        ExtendText = CreateWindow(TEXT("button"), TEXT("Show Title"),
-            WS_VISIBLE | WS_CHILD | BS_CHECKBOX,
-            20, 130, 200, 35,
-            hWnd, (HMENU)1, NULL, NULL);
-        TCHAR Planets[8][8] =
-        {
-            TEXT("Default"), TEXT("Light"), TEXT("Dark")
-        };
-        TCHAR A[16];
-        int  k = 0;
-        memset(&A, 0, sizeof(A));
-        for (k = 0; k <= 2; k += 1)
-        {
-            wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Planets[k]);
-            SendMessage(hWndComboBox, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
-        }
-        SendMessage(hWndComboBox, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-        SetWindowText(Title, L"Settings");
-        SetWindowText(TitleBarText, L"Titlebar Colour");
-        SetWindowText(ColorText, L"Backdrop Type");
-        SetWindowText(ExtendText, L"Extend Frame Into Client Area");
-        hFontBold = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-        hFont = CreateFontW(18, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-        SendMessage(Title, WM_SETFONT, WPARAM(hFontBold), TRUE);
-        SendMessage(TitleBarText, WM_SETFONT, WPARAM(hFont), TRUE);
-        SendMessage(ColorText, WM_SETFONT, WPARAM(hFont), TRUE);
-        SendMessage(hWndComboBox, WM_SETFONT, WPARAM(hFont), TRUE);
-        SendMessage(ExtendText, WM_SETFONT, WPARAM(hFont), TRUE);
-        SetWindowTheme(ExtendText, L"wstr", L"wstr");
-
         DwmExtendFrameIntoClientArea(hWnd, &margins);
         ApplyMica(hWnd);
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
@@ -469,13 +422,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CTLCOLORSTATIC:
     {
         HDC hdc = reinterpret_cast<HDC>(wParam);
+        HWND hWnd = (HWND)lParam;
         SetTextColor(hdc, darkTextColor);
         SetBkColor(hdc, darkBkColor);
         if (!hbrBkgnd)
             hbrBkgnd = CreateSolidBrush(darkBkColor);
         return reinterpret_cast<INT_PTR>(hbrBkgnd);
     }
-        break;
+    break;
     case WM_CTLCOLORLISTBOX:
     {
         HDC hdc = reinterpret_cast<HDC>(wParam);

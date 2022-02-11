@@ -2,7 +2,6 @@
 
 #include "resource.h"
 #include "framework.h"
-#include "IatHook.h"
 
 
 // functions
@@ -12,10 +11,6 @@ constexpr COLORREF darkBkColor = 0x000000;
 constexpr COLORREF darkTextColor = 0xFFFFFF;
 static HBRUSH hbrBkgnd = nullptr;
 
-#ifndef HINST_THISCOMPONENT
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-#define HINST_THISCOMPONENT ((HINSTANCE)&__ImageBase)
-#endif
 enum IMMERSIVE_HC_CACHE_MODE
 {
 	IHCM_USE_CACHED_VALUE,
