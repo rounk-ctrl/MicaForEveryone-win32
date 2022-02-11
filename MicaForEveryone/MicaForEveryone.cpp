@@ -312,10 +312,6 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                     ApplyNoMaterial(hwnds);
                 }
             }
-            if (IDM_GUI == menuItemId)
-            {
-                ShowWindow(hwnd, SW_SHOW);
-            }
             
         DestroyMenu(hMenu);
     }
@@ -365,8 +361,6 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HBRUSH hBrush;
-    hBrush = CreateSolidBrush(RGB(0, 0, 0));
     HBRUSH brush = CreateSolidBrush(darkBkColor);
     RtlGetVersion(&os);
     static UINT s_uTaskbarRestart; 
@@ -374,10 +368,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_CREATE:
     {
-        AllowDarkModeForWindow(hWnd, true);
-        ApplyDarkTitleBar(hWnd, TRUE);
-        DwmExtendFrameIntoClientArea(hWnd, &margins);
-        ApplyMica(hWnd);
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
@@ -396,9 +386,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             GetCursorPos(&ok);
             EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
             ShowContextMenu(hWnd, ok);
-            return TRUE;
-        case WM_LBUTTONDOWN:
-            ShowWindow(hWnd, SW_SHOW);
             return TRUE;
         }
     case WM_COMMAND:
@@ -473,6 +460,8 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     {
     case WM_INITDIALOG:
     {
+        DwmExtendFrameIntoClientArea(hDlg, &margins);
+        ApplyMica(hDlg);
         SetWindowTheme(GetDlgItem(hDlg, IDOK), L"Explorer", nullptr);
         SendMessageW(hDlg, WM_THEMECHANGED, 0, 0);
         HFONT hOrigFont = (HFONT)SendMessage(GetDlgItem(hDlg, IDC_STATIC_LINK), WM_GETFONT, 0, 0);

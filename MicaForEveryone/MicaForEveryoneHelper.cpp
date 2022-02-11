@@ -38,14 +38,6 @@ HICON hMainIcon;
 // point used to spawn the menu where your cursor is
 POINT ok;
 
-HWND Title;
-HFONT hFontBold;
-HFONT hFont;
-HWND hWndComboBox;
-HWND TitleBarText;
-HWND ColorText;
-HWND ExtendText;
-
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode)
 {
