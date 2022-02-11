@@ -115,6 +115,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    SetPreferredAppMode = (fnSetPreferredAppMode)GetProcAddress(hUxtheme, MAKEINTRESOURCEA(135));
    RefreshImmersiveColorPolicyState = reinterpret_cast<fnRefreshImmersiveColorPolicyState>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(104)));
    AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
+   FreeLibrary(hUxtheme);
    DarkThemeEnabled = IsExplorerDarkTheme();
    if (DarkThemeEnabled)
    {
@@ -466,7 +467,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_DESTROY:
         if (hEvent) 
             UnhookWinEvent(hEvent);
-        FreeLibrary(hUxtheme);
         PostQuitMessage(0);
         break;
     default:
