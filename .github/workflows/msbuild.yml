@@ -40,5 +40,5 @@ jobs:
       with:
       # Artifact name
         name:  ${{ env.EXE_NAME }}
-      # A file, directory or wildcard pattern that describes what to upload
-        path: ${{ env.ARCH }}\${{ env.RELEASE_DIR }}\${{ env.EXE_NAME }}
+      # A file, directory or wildcard pattern that describes what to upload (ik its shit)
+        path: x64\${{ env.RELEASE_DIR }}\${{ env.EXE_NAME }}
