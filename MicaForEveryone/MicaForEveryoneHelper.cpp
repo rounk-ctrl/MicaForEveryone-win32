@@ -6,6 +6,7 @@ NOTIFYICONDATA nidApp;
 // Menu items values
 BOOL Extend = FALSE;
 BOOL Dark = FALSE;
+BOOL System = FALSE;
 BOOL Light = FALSE;
 BOOL Mica = FALSE;
 BOOL DefaultBack = TRUE;

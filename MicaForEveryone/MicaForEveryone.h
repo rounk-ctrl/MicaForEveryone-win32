@@ -10,7 +10,6 @@
 constexpr COLORREF darkBkColor = 0x000000;
 constexpr COLORREF darkTextColor = 0xFFFFFF;
 static HBRUSH hbrBkgnd = nullptr;
-
 constexpr COLORREF lightBkColor = 0xFFFFFF;
 constexpr COLORREF lightTextColor = 0x000000;
 

@@ -22,6 +22,7 @@ extern BOOL Extend;
 extern BOOL Dark;
 extern BOOL Light;
 extern BOOL Mica;
+extern BOOL System;
 extern BOOL DefaultBack;
 extern BOOL Acrylic;
 extern BOOL Tabbed;

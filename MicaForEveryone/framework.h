@@ -19,6 +19,7 @@
 #pragma comment(lib, "dwmapi.lib")
 #include <stdio.h>
 #include <Uxtheme.h>
+#include <WindowsX.h>
+#include <Vssym32.h>
 #pragma comment(lib, "Uxtheme.lib")
-#include <vsstyle.h>
 #pragma comment(lib, "Comctl32.lib")

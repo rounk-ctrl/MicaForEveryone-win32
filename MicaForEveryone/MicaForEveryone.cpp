@@ -51,6 +51,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     return (int) msg.wParam;
 }
 
+int DarkThemeEnabled;
 //
 //  FUNCTION: MyRegisterClass()
 //
@@ -75,6 +76,96 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
 
     return RegisterClassExW(&wcex);
+}
+struct SubclassInfo
+{
+    COLORREF headerTextColor;
+};
+void InitListView(HWND hListView)
+{
+    HWND hHeader = ListView_GetHeader(hListView);
+
+    if (DarkThemeEnabled)
+    {
+        SetWindowSubclass(hListView, [](HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR /*uIdSubclass*/, DWORD_PTR dwRefData) -> LRESULT {
+            switch (uMsg)
+            {
+            case WM_NOTIFY:
+            {
+                if (reinterpret_cast<LPNMHDR>(lParam)->code == NM_CUSTOMDRAW)
+                {
+                    LPNMCUSTOMDRAW nmcd = reinterpret_cast<LPNMCUSTOMDRAW>(lParam);
+                    switch (nmcd->dwDrawStage)
+                    {
+                    case CDDS_PREPAINT:
+                        return CDRF_NOTIFYITEMDRAW;
+                    case CDDS_ITEMPREPAINT:
+                    {
+                        auto info = reinterpret_cast<SubclassInfo*>(dwRefData);
+                        SetTextColor(nmcd->hdc, info->headerTextColor);
+                        return CDRF_DODEFAULT;
+                    }
+                    }
+                }
+            }
+            break;
+            case WM_THEMECHANGED:
+            {
+                if (DarkThemeEnabled)
+                {
+                    HWND hHeader = ListView_GetHeader(hWnd);
+
+                    AllowDarkModeForWindow(hWnd, DarkThemeEnabled);
+                    AllowDarkModeForWindow(hHeader, DarkThemeEnabled);
+
+                    HTHEME hTheme = OpenThemeData(nullptr, L"ItemsView");
+                    if (hTheme)
+                    {
+                        COLORREF color;
+                        if (SUCCEEDED(GetThemeColor(hTheme, 0, 0, TMT_TEXTCOLOR, &color)))
+                        {
+                            ListView_SetTextColor(hWnd, color);
+                        }
+                        if (SUCCEEDED(GetThemeColor(hTheme, 0, 0, TMT_FILLCOLOR, &color)))
+                        {
+                            ListView_SetTextBkColor(hWnd, color);
+                            ListView_SetBkColor(hWnd, color);
+                        }
+                        CloseThemeData(hTheme);
+                    }
+
+                    hTheme = OpenThemeData(hHeader, L"Header");
+                    if (hTheme)
+                    {
+                        auto info = reinterpret_cast<SubclassInfo*>(dwRefData);
+                        GetThemeColor(hTheme, HP_HEADERITEM, 0, TMT_TEXTCOLOR, &(info->headerTextColor));
+                        CloseThemeData(hTheme);
+                    }
+
+                    SendMessageW(hHeader, WM_THEMECHANGED, wParam, lParam);
+
+                    RedrawWindow(hWnd, nullptr, nullptr, RDW_FRAME | RDW_INVALIDATE);
+                }
+            }
+            break;
+            case WM_DESTROY:
+            {
+                auto info = reinterpret_cast<SubclassInfo*>(dwRefData);
+                delete info;
+            }
+            break;
+            }
+            return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+            }, 0, reinterpret_cast<DWORD_PTR>(new SubclassInfo{}));
+    }
+
+    ListView_SetExtendedListViewStyle(hListView, LVS_EX_FULLROWSELECT | LVS_EX_DOUBLEBUFFER | LVS_EX_HEADERDRAGDROP);
+
+    // Hide focus dots
+    SendMessage(hListView, WM_CHANGEUISTATE, MAKELONG(UIS_SET, UISF_HIDEFOCUS), 0);
+
+    SetWindowTheme(hHeader, L"ItemsView", nullptr); // DarkMode
+    SetWindowTheme(hListView, L"ItemsView", nullptr); // DarkMode
 }
 
 //
@@ -107,7 +198,6 @@ int IsExplorerDarkTheme()
     );
     return ERROR_SUCCESS == nError ? !nResult : FALSE;
 }
-int DarkThemeEnabled;
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
@@ -117,19 +207,17 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    AllowDarkModeForWindow = reinterpret_cast<fnAllowDarkModeForWindow>(GetProcAddress(hUxtheme, MAKEINTRESOURCEA(133)));
    FreeLibrary(hUxtheme);
    DarkThemeEnabled = IsExplorerDarkTheme();
-   if (DarkThemeEnabled)
-   {
-       SetPreferredAppMode(PreferredAppMode::ForceDark);
-   }
+   SetPreferredAppMode(PreferredAppMode::AllowDark);
+   RefreshImmersiveColorPolicyState();
    HWND hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
       CW_USEDEFAULT, CW_USEDEFAULT, 840, 470, nullptr, nullptr, hInstance, nullptr);
-   
    if (!hWnd)
    {
       return FALSE;
    }
    TrayIcon(hWnd, hInst);
    DisableMaximizeButton(hWnd);
+   ApplyDarkTitleBar(hWnd, DarkThemeEnabled);
    return TRUE;
 }
 BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam) {
@@ -192,6 +280,13 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 mi.fMask = MIIM_STATE;
                 mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_LIGHT, FALSE, &mi);
+            }
+            if (System)
+            {
+                mi.cbSize = sizeof(MENUITEMINFO);
+                mi.fMask = MIIM_STATE;
+                mi.fState = MF_CHECKED;
+                SetMenuItemInfo(hSubMenu, IDM_SYS, FALSE, &mi);
             }
             if (Mica)
             {
@@ -272,6 +367,7 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultCol = FALSE;
                 Dark = TRUE;
                 Light = FALSE;
+                System = FALSE;
                 for (const HWND& hwnds : hwndlist)
                 {
                     ApplyDarkTitleBar(hwnds, TRUE);
@@ -283,9 +379,21 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultCol = FALSE;
                 Light = TRUE;
                 Dark = FALSE;
+                System = FALSE;
                 for (const HWND& hwnds : hwndlist)
                 {
                     ApplyDarkTitleBar(hwnds, FALSE);
+                }
+            }
+            if (IDM_SYS == menuItemId)
+            {
+                DefaultCol = FALSE;
+                Light = FALSE;
+                Dark = FALSE;
+                System = TRUE;
+                for (const HWND& hwnds : hwndlist)
+                {
+                    ApplyDarkTitleBar(hwnds, DarkThemeEnabled);
                 }
             }
             if (IDM_DEFAULTCOL == menuItemId)
@@ -293,6 +401,7 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 DefaultCol = TRUE;
                 Light = FALSE;
                 Dark = FALSE;
+                System = FALSE;
             }
             if (IDM_MICA == menuItemId)
             {
@@ -342,7 +451,6 @@ void ShowContextMenu(HWND hwnd, POINT pt)
         DestroyMenu(hMenu);
     }
 }
-
 VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
 {
     if (dwEvent == EVENT_OBJECT_CREATE)
@@ -356,6 +464,10 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
             if (Dark)
             {
                 ApplyDarkTitleBar(hwnd, TRUE);
+            }
+            if (System)
+            {
+                ApplyDarkTitleBar(hwnd, DarkThemeEnabled);
             }
             if (DefaultBack)
             {
@@ -387,7 +499,7 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
 //
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
-    HBRUSH brush = CreateSolidBrush(darkBkColor);
+    HBRUSH brush = CreateSolidBrush(DarkThemeEnabled ? darkBkColor : lightBkColor);
     RtlGetVersion(&os);
     static UINT s_uTaskbarRestart; 
     switch (message)
@@ -397,8 +509,39 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
+        HWND ok = CreateWindowW(L"COMBOBOX", L"", CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | SS_LEFT, 20, 80, 450, 20, hWnd, (HMENU)1, NULL, NULL);
+        SetWindowTheme(ok, L"CFD", NULL);
+        if (DarkThemeEnabled)
+        {
+            AllowDarkModeForWindow(hWnd, true);
+            AllowDarkModeForWindow(ok, true);
+            SendMessageW(ok, WM_THEMECHANGED, 0, 0);
+        }
+        HWND Title = CreateWindowW(L"static", L"",
+            WS_CHILD | WS_VISIBLE | SS_LEFT,
+            20, 20, 150, 35,
+            hWnd, (HMENU)1, NULL, NULL);
+        TCHAR Modes[8][8] =
+        {
+            TEXT("Default"), TEXT("System"), TEXT("Light"), TEXT("Dark")
+        }; 
+        TCHAR A[16];
+        int  k = 0;
+        memset(&A, 0, sizeof(A));
+        for (k = 0; k <= 3; k += 1)
+        {
+            wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Modes[k]);
+            SendMessage(ok, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
+        }
+        SendMessage(ok, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
+        SetWindowText(Title, L"Settings");
+        HFONT hFontBold = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+        HFONT hFont = CreateFontW(18, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
+        SendMessage(Title, WM_SETFONT, WPARAM(hFontBold), TRUE);
+        SendMessage(ok, WM_SETFONT, WPARAM(hFont), TRUE);
+        UpdateWindow(hWnd);
     }
-        break;
+    break;
     case WM_CLOSE:
         ShowWindow(hWnd, SW_HIDE);
         break;
@@ -412,6 +555,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             GetCursorPos(&ok);
             EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
             ShowContextMenu(hWnd, ok);
+            break;
+        case WM_LBUTTONDOWN:
+            ShowWindow(hWnd, SW_SHOW);
+            break;
             return TRUE;
         }
     case WM_COMMAND:
@@ -432,6 +579,11 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+    case WM_THEMECHANGED:
+    {
+        DarkThemeEnabled = IsExplorerDarkTheme();
+    }
+    break;
     case WM_CTLCOLORSTATIC:
     {
         HDC hdc = reinterpret_cast<HDC>(wParam);
