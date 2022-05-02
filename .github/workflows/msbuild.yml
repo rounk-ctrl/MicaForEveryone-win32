@@ -21,7 +21,7 @@ jobs:
       SOLUTION_FILE_PATH: .
       BUILD_CONFIGURATION: Release
       RELEASE_DIR: Release
-      EXE_NAME: MicaForEveryone-${{ matrix.platform }}-${{ matrix.configuration }}.exe
+      EXE_NAME: ${{ matrix.platform }}\MicaForEveryone.exe
 
     steps:
     - uses: actions/checkout@v3
