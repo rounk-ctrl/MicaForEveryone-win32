@@ -23,6 +23,10 @@ permissions:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        platform: [x64, x86]
     runs-on: windows-latest
 
     steps:
