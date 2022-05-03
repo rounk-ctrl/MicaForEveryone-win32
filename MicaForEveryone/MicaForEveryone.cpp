@@ -423,7 +423,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         SetWindowTheme(ok, L"CFD", NULL);
         if (DarkThemeEnabled)
         {
-            AllowDarkModeForWindow(hWnd, true);
             AllowDarkModeForWindow(ok, true);
             SendMessageW(ok, WM_THEMECHANGED, 0, 0);
         }
@@ -489,11 +488,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
-    case WM_THEMECHANGED:
-    {
-        DarkThemeEnabled = IsExplorerDarkTheme();
-    }
-    break;
     case WM_CTLCOLORSTATIC:
     {
         HDC hdc = reinterpret_cast<HDC>(wParam);

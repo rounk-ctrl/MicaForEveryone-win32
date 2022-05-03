@@ -29,7 +29,6 @@
 #define IDM_ACRYLIC                     32804
 #define IDM_TABBED                      32805
 #define IDM_GUI                         32815
-#define ID_TITLEBARCOLORMODE_SYSTEM     32817
 #define IDM_SYS                         32818
 #define IDC_STATIC                      -1
 
