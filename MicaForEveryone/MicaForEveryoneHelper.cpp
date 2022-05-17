@@ -179,7 +179,6 @@ BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
             *Dtc++ = (unsigned char)*src++;
         *Dtc = '\ 0';
 #endif
-
     }
     else
         return FALSE;

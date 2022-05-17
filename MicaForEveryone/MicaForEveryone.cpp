@@ -251,7 +251,6 @@ void ShowContextMenu(HWND hwnd, POINT pt)
 					Shell_NotifyIcon(NIM_DELETE, &nidApp);
 					PostQuitMessage(0);
 					break;
-
 				}
 				case IDM_ABOUT:
 				{
