@@ -34,19 +34,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
         return FALSE;
     }
 
-    HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_MICAFOREVERYONE));
+	BOOL bRet;
+	MSG msg;
 
-    MSG msg;
-
-    // Main message loop:
-    while (GetMessage(&msg, nullptr, 0, 0))
-    {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg))
-        {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
-        }
-    }
+	// Main message loop:
+	while ((bRet = GetMessage(&msg, nullptr, 0, 0)) != 0)
+	{
+		if (bRet == -1)
+		{
+			// handle the error and possibly exit
+		}
+		else
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+	}
 
     return (int) msg.wParam;
 }
@@ -151,86 +154,63 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 EnableMenuItem(hSubMenu, IDM_ACRYLIC, MF_ENABLED);
                 EnableMenuItem(hSubMenu, IDM_TABBED, MF_GRAYED);
             }
-            if (os.dwBuildNumber == 22000)
+            else if (os.dwBuildNumber == 22000)
             {
                 EnableMenuItem(hSubMenu, IDM_MICA, MF_ENABLED);
                 EnableMenuItem(hSubMenu, IDM_ACRYLIC, MF_ENABLED);
                 EnableMenuItem(hSubMenu, IDM_TABBED, MF_GRAYED);
             }
-            if (os.dwBuildNumber >= 22494)
+            else if (os.dwBuildNumber >= 22494)
             {
                 EnableMenuItem(hSubMenu, IDM_MICA, MF_GRAYED);
                 EnableMenuItem(hSubMenu, IDM_ACRYLIC, MF_GRAYED);
                 EnableMenuItem(hSubMenu, IDM_TABBED, MF_GRAYED);
             }
-            if (os.dwBuildNumber >= 22523)
+            else if (os.dwBuildNumber >= 22523)
             {
                 EnableMenuItem(hSubMenu, IDM_MICA, MF_ENABLED);
                 EnableMenuItem(hSubMenu, IDM_ACRYLIC, MF_ENABLED);
                 EnableMenuItem(hSubMenu, IDM_TABBED, MF_ENABLED);
             }
+			// global
+			mi.cbSize = sizeof(MENUITEMINFO);
+			mi.fMask = MIIM_STATE;
+			mi.fState = MF_CHECKED;
+
             if (Extend)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
-                SetMenuItemInfo(hSubMenu, IDM_EXTEND, FALSE, &mi);
-                
+                SetMenuItemInfo(hSubMenu, IDM_EXTEND, FALSE, &mi);                
             }
-            if (Dark) 
+            else if (Dark) 
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_DARK, FALSE, &mi);
             }
-            if (Light)
+            else if (Light)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_LIGHT, FALSE, &mi);
             }
-            if (System)
+            else if (System)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_SYS, FALSE, &mi);
             }
-            if (Mica)
+            else if (Mica)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_MICA, FALSE, &mi);
             }
-            if (DefaultBack)
+            else if (DefaultBack)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_DEFAULTBACK, FALSE, &mi);
             }
-            if (Acrylic)
+            else if (Acrylic)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_ACRYLIC, FALSE, &mi);
             }
-            if (Tabbed)
+            else if (Tabbed)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_TABBED, FALSE, &mi);
             }
-            if (DefaultCol)
+            else if (DefaultCol)
             {
-                mi.cbSize = sizeof(MENUITEMINFO);
-                mi.fMask = MIIM_STATE;
-                mi.fState = MF_CHECKED;
                 SetMenuItemInfo(hSubMenu, IDM_DEFAULTCOL, FALSE, &mi);
             }
         }
@@ -250,113 +230,123 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                 MessageBox(hwnd, L"Error getting menu.", L"Error", MB_ICONSTOP);
 
             // Toggle the menu item state. 
-            if (IDM_EXTEND == menuItemId)
-            {
-                if (Extend)
-                    Extend = FALSE;
-                else
-                {
-                    Extend = TRUE;
-                    for (const HWND& hwnds : hwndlist)
-                    {
-                        DwmExtendFrameIntoClientArea(hwnds, &margins);
-                    }
-                }
-            }
-            if (IDM_EXIT == menuItemId) 
-            {
-                Shell_NotifyIcon(NIM_DELETE, &nidApp);
-                DestroyWindow(hwnd);
-            }
-            if (IDM_ABOUT == menuItemId)
-            {
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
-            }
-            if (IDM_DARK == menuItemId)
-            {
-                DefaultCol = FALSE;
-                Dark = TRUE;
-                Light = FALSE;
-                System = FALSE;
-                for (const HWND& hwnds : hwndlist)
-                {
-                    ApplyDarkTitleBar(hwnds, TRUE);
-                }
-                
-            }
-            if (IDM_LIGHT == menuItemId)
-            {
-                DefaultCol = FALSE;
-                Light = TRUE;
-                Dark = FALSE;
-                System = FALSE;
-                for (const HWND& hwnds : hwndlist)
-                {
-                    ApplyDarkTitleBar(hwnds, FALSE);
-                }
-            }
-            if (IDM_SYS == menuItemId)
-            {
-                DefaultCol = FALSE;
-                Light = FALSE;
-                Dark = FALSE;
-                System = TRUE;
-                for (const HWND& hwnds : hwndlist)
-                {
-                    ApplyDarkTitleBar(hwnds, DarkThemeEnabled);
-                }
-            }
-            if (IDM_DEFAULTCOL == menuItemId)
-            {
-                DefaultCol = TRUE;
-                Light = FALSE;
-                Dark = FALSE;
-                System = FALSE;
-            }
-            if (IDM_MICA == menuItemId)
-            {
-                Mica = TRUE;
-                DefaultBack = FALSE;
-                Acrylic = FALSE;
-                Tabbed = FALSE;
-                for (const HWND& hwnds : hwndlist) 
-                {
-                    ApplyMica(hwnds);
-                }
-            }
-            if (IDM_ACRYLIC == menuItemId)
-            {
-                DefaultBack = FALSE;
-                Mica = FALSE;
-                Acrylic = TRUE;
-                Tabbed = FALSE;
-                for (const HWND& hwnds : hwndlist)
-                {
-                    ApplyAcrylic(hwnds);
-                }
-            }
-            if (IDM_TABBED == menuItemId)
-            {
-                Mica = FALSE;
-                DefaultBack = FALSE;
-                Acrylic = FALSE;
-                Tabbed = TRUE;
-                for (const HWND& hwnds : hwndlist)
-                {
-                    ApplyTabbed(hwnds);
-                }
-            }
-            if (IDM_DEFAULTBACK == menuItemId)
-            {
-                Mica = FALSE;
-                DefaultBack = TRUE;
-                Acrylic = FALSE;
-                Tabbed = FALSE;
-                for (const HWND& hwnds : hwndlist)
-                {
-                    ApplyNoMaterial(hwnds);
-                }
-            }
+			switch (menuItemId)
+			{
+				case IDM_EXTEND:
+				{
+					if (Extend)
+						Extend = FALSE;
+					else
+					{
+						Extend = TRUE;
+						for (const HWND& hwnds : hwndlist)
+						{
+							DwmExtendFrameIntoClientArea(hwnds, &margins);
+						}
+					}
+					break;
+				}
+				case IDM_EXIT:
+				{
+					Shell_NotifyIcon(NIM_DELETE, &nidApp);
+					PostQuitMessage(0);
+					break;
+
+				}
+				case IDM_ABOUT:
+				{
+					DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hwnd, About);
+					break;
+				}
+				case IDM_DARK:
+				{
+					DefaultCol = FALSE;
+					Dark = TRUE;
+					Light = FALSE;
+					System = FALSE;
+					for (const HWND& hwnds : hwndlist)
+					{
+						ApplyDarkTitleBar(hwnds, TRUE);
+					}
+					break;
+				}
+				case IDM_LIGHT:
+				{
+					DefaultCol = FALSE;
+					Light = TRUE;
+					Dark = FALSE;
+					System = FALSE;
+					for (const HWND& hwnds : hwndlist)
+					{
+						ApplyDarkTitleBar(hwnds, FALSE);
+					}
+					break;
+				}
+				case IDM_SYS:
+				{
+					DefaultCol = FALSE;
+					Light = FALSE;
+					Dark = FALSE;
+					System = TRUE;
+					for (const HWND& hwnds : hwndlist)
+					{
+						ApplyDarkTitleBar(hwnds, DarkThemeEnabled);
+					}
+					break;
+				}
+				case IDM_DEFAULTCOL:
+				{
+					DefaultCol = TRUE;
+					Light = FALSE;
+					Dark = FALSE;
+					System = FALSE;
+					break;
+				}
+				case IDM_MICA:
+				{
+					Mica = TRUE;
+					DefaultBack = FALSE;
+					Acrylic = FALSE;
+					Tabbed = FALSE;
+					for (const HWND& hwnds : hwndlist)
+					{
+						ApplyMica(hwnds);
+					}
+					break;
+				}
+				case IDM_ACRYLIC:
+				{
+					DefaultBack = FALSE;
+					Mica = FALSE;
+					Acrylic = TRUE;
+					Tabbed = FALSE;
+					for (const HWND& hwnds : hwndlist)
+					{
+						ApplyAcrylic(hwnds);
+					}
+					break;
+				}
+				case IDM_TABBED:
+				{
+					Mica = FALSE;
+					DefaultBack = FALSE;
+					Acrylic = FALSE;
+					Tabbed = TRUE;
+					for (const HWND& hwnds : hwndlist)
+					{
+						ApplyTabbed(hwnds);
+					}
+					break;
+				}
+				case IDM_DEFAULTBACK:
+				{
+					Mica = FALSE;
+					DefaultBack = TRUE;
+					Acrylic = FALSE;
+					Tabbed = FALSE;
+					break;
+				}
+			}
             
         DestroyMenu(hMenu);
     }
@@ -371,27 +361,27 @@ VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, H
             {
                 ApplyDarkTitleBar(hwnd, FALSE);
             }
-            if (Dark)
+            else if (Dark)
             {
                 ApplyDarkTitleBar(hwnd, TRUE);
             }
-            if (System)
+            else if (System)
             {
                 ApplyDarkTitleBar(hwnd, DarkThemeEnabled);
             }
-            if (DefaultBack)
+            else if (DefaultBack)
             {
                 SetSystemBackdropType(hwnd, SystemBackdropType::Auto);
             }
-            if (Mica)
+            else if (Mica)
             {
                 ApplyMica(hwnd);
             }
-            if (Acrylic)
+            else if (Acrylic)
             {
                 ApplyAcrylic(hwnd);
             }
-            if (Tabbed)
+            else if (Tabbed)
             {
                 ApplyTabbed(hwnd);
             }
@@ -419,107 +409,36 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
-        HWND ok = CreateWindowW(L"COMBOBOX", L"", CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | SS_LEFT, 20, 80, 450, 20, hWnd, (HMENU)1, NULL, NULL);
-        SetWindowTheme(ok, L"CFD", NULL);
-        if (DarkThemeEnabled)
-        {
-            AllowDarkModeForWindow(ok, true);
-            SendMessageW(ok, WM_THEMECHANGED, 0, 0);
-        }
-        HWND Title = CreateWindowW(L"static", L"",
-            WS_CHILD | WS_VISIBLE | SS_LEFT,
-            20, 20, 150, 35,
-            hWnd, (HMENU)1, NULL, NULL);
-        TCHAR Modes[8][8] =
-        {
-            TEXT("Default"), TEXT("System"), TEXT("Light"), TEXT("Dark")
-        }; 
-        TCHAR A[16];
-        int  k = 0;
-        memset(&A, 0, sizeof(A));
-        for (k = 0; k <= 3; k += 1)
-        {
-            wcscpy_s(A, sizeof(A) / sizeof(TCHAR), (TCHAR*)Modes[k]);
-            SendMessage(ok, (UINT)CB_ADDSTRING, (WPARAM)0, (LPARAM)A);
-        }
-        SendMessage(ok, CB_SETCURSEL, (WPARAM)0, (LPARAM)0);
-        SetWindowText(Title, L"Settings");
-        HFONT hFontBold = CreateFontW(35, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-        HFONT hFont = CreateFontW(18, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Segoe UI");
-        SendMessage(Title, WM_SETFONT, WPARAM(hFontBold), TRUE);
-        SendMessage(ok, WM_SETFONT, WPARAM(hFont), TRUE);
-        UpdateWindow(hWnd);
+		break;
     }
-    break;
-    case WM_CLOSE:
-        ShowWindow(hWnd, SW_HIDE);
-        break;
-    case WM_ERASEBKGND:
-        SetClassLongPtr(hWnd, GCLP_HBRBACKGROUND, (LONG_PTR)brush);
     case WM_USER_SHELLICON:
         // systray msg callback 
         switch (LOWORD(lParam))
         {
-        case WM_RBUTTONDOWN:
-            GetCursorPos(&ok);
-            EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
-            ShowContextMenu(hWnd, ok);
-            break;
-        case WM_LBUTTONDOWN:
-            ShowWindow(hWnd, SW_SHOW);
-            break;
-            return TRUE;
+			case WM_RBUTTONDOWN:
+				GetCursorPos(&ok);
+				EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
+				ShowContextMenu(hWnd, ok);
+				break;
+				return TRUE;
         }
-    case WM_COMMAND:
-        {
-            int wmId = LOWORD(wParam);
-            // Parse the menu selections:
-            switch (wmId)
-            {
-            case IDM_ABOUT:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-                break;
-            case IDM_EXIT:
-                Shell_NotifyIcon(NIM_DELETE, &nidApp);
-                DestroyWindow(hWnd);
-                break;
-            default:
-                return DefWindowProc(hWnd, message, wParam, lParam);
-            }
-        }
-        break;
-    case WM_CTLCOLORSTATIC:
-    {
-        HDC hdc = reinterpret_cast<HDC>(wParam);
-        HWND hWnd = (HWND)lParam;
-        SetTextColor(hdc, darkTextColor);
-        SetBkColor(hdc, darkBkColor);
-        if (!hbrBkgnd)
-            hbrBkgnd = CreateSolidBrush(darkBkColor);
-        return reinterpret_cast<INT_PTR>(hbrBkgnd);
-    }
-    break;
-    case WM_CTLCOLORLISTBOX:
-    {
-        HDC hdc = reinterpret_cast<HDC>(wParam);
-        SetTextColor(hdc, darkTextColor);
-        SetBkColor(hdc, darkBkColor);
-        if (!hbrBkgnd)
-            hbrBkgnd = CreateSolidBrush(darkBkColor);
-        return reinterpret_cast<INT_PTR>(hbrBkgnd);
-    }
-    break;
-    case WM_CTLCOLOREDIT: 
-    {
-        HDC hdc = reinterpret_cast<HDC>(wParam);
-        SetBkMode(hdc, OPAQUE);
-        SetTextColor(hdc, darkTextColor);
-        SetBkColor(hdc, darkBkColor);
-        if (!hbrBkgnd)
-            hbrBkgnd = CreateSolidBrush(darkBkColor);
-        return reinterpret_cast<INT_PTR>(hbrBkgnd);
-    }
-    break;
+	case WM_COMMAND:
+	{
+		int wmId = LOWORD(wParam);
+		// Parse the menu selections:
+		switch (wmId)
+		{
+		case IDM_ABOUT:
+			DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
+			break;
+		case IDM_EXIT:
+			Shell_NotifyIcon(NIM_DELETE, &nidApp);
+			DestroyWindow(hWnd);
+			break;
+		default:
+			return DefWindowProc(hWnd, message, wParam, lParam);
+		}
+	}
     case WM_DESTROY:
         if (hEvent) 
             UnhookWinEvent(hEvent);
