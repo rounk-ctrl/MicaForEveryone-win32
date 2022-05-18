@@ -3,5 +3,6 @@
   ![GitHub top language](https://img.shields.io/github/languages/top/rounk-ctrl/MicaForEveryone-win32)
   ![Lines of code](https://img.shields.io/tokei/lines/github/rounk-ctrl/MicaForEveryone-win32)
   ![License](https://img.shields.io/github/license/rounk-ctrl/Micaforeveryone-win32)
+  ![CodeFactor Grade](https://img.shields.io/codefactor/grade/github/rounk-ctrl/micaforeveryone-win32)
 
 fork of https://github.com/minusium/MicaForEveryone but in c++
