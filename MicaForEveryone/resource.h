@@ -34,6 +34,15 @@
 #define ID_BACKDROPTYPEPREFERENCE_NONE  32820
 #define IDM_NONE                        32821
 #define IDM_SYSCOL                      32822
+#define ID_MENU_CORNERPREFERENCE        32823
+#define ID_CORNERPREFERENCE_DEFAULT     32824
+#define ID_CORNERPREFERENCE_SQUARE      32825
+#define ID_CORNERPREFERENCE_ROUNDED     32826
+#define ID_CORNERPREFERENCE_SLIGHTLYROUNDED 32827
+#define IDM_DEFCOR                      32828
+#define IDM_SQUARE                      32829
+#define IDM_ROUND                       32830
+#define IDM_SROUND                      32831
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -42,7 +51,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
-#define _APS_NEXT_COMMAND_VALUE         32823
+#define _APS_NEXT_COMMAND_VALUE         32832
 #define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

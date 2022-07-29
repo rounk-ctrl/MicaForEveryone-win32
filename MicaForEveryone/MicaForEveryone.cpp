@@ -29,6 +29,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	LoadStringW(hInstance, IDC_MICAFOREVERYONE, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
+	#pragma region config
 	LPCTSTR path = _T(".\\settings.ini");
 	TCHAR value[64];
 	GetPrivateProfileString(_T("global"), _T("TitleBarColor"), _T("Default"), value, 64, path);
@@ -40,6 +41,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		Light = TRUE;
 	else if (!_tcscmp(value, _T("Dark")))
 		Dark = TRUE;
+
 	GetPrivateProfileString(_T("global"), _T("BackdropPreference"), _T("Default"), value, 64, path);
 	if (!_tcscmp(value, _T("Default")))
 		DefaultBack = TRUE;
@@ -51,6 +53,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 		Acrylic = TRUE;
 	else if (!_tcscmp(value, _T("Tabbed")))
 		Tabbed = TRUE;
+
+	GetPrivateProfileString(_T("global"), _T("ExtendFrameIntoClientArea"), _T("Default"), value, 64, path);
+	if (!_tcscmp(value, _T("False")))
+		Extend = FALSE;
+	else if (!_tcscmp(value, _T("True")))
+		Extend = TRUE;
+
+	GetPrivateProfileString(_T("global"), _T("CornerPreference"), _T("Default"), value, 64, path);
+	if (!_tcscmp(value, _T("Default")))
+		DefCor = TRUE;
+	else if (!_tcscmp(value, _T("Square")))
+		Square = TRUE;
+	else if (!_tcscmp(value, _T("Rounded")))
+		Round = TRUE;
+	else if (!_tcscmp(value, _T("RoundedSmall")))
+		SRound = TRUE;
+#pragma endregion
+
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
         return FALSE;
@@ -257,6 +277,34 @@ void ShowContextMenu(HWND hwnd, POINT pt)
 				mi.fState = MF_CHECKED;
 				SetMenuItemInfo(hSubMenu, IDM_SYSCOL, FALSE, &mi);
 			}
+			if (DefCor)
+			{
+				mi.cbSize = sizeof(MENUITEMINFO);
+				mi.fMask = MIIM_STATE;
+				mi.fState = MF_CHECKED;
+				SetMenuItemInfo(hSubMenu, IDM_DEFCOR, FALSE, &mi);
+			}
+			if (Square)
+			{
+				mi.cbSize = sizeof(MENUITEMINFO);
+				mi.fMask = MIIM_STATE;
+				mi.fState = MF_CHECKED;
+				SetMenuItemInfo(hSubMenu, IDM_SQUARE, FALSE, &mi);
+			}
+			if (Round)
+			{
+				mi.cbSize = sizeof(MENUITEMINFO);
+				mi.fMask = MIIM_STATE;
+				mi.fState = MF_CHECKED;
+				SetMenuItemInfo(hSubMenu, IDM_ROUND, FALSE, &mi);
+			}
+			if (SRound)
+			{
+				mi.cbSize = sizeof(MENUITEMINFO);
+				mi.fMask = MIIM_STATE;
+				mi.fState = MF_CHECKED;
+				SetMenuItemInfo(hSubMenu, IDM_SROUND, FALSE, &mi);
+			}
 
         }
             // respect menu drop alignment
@@ -399,6 +447,50 @@ void ShowContextMenu(HWND hwnd, POINT pt)
                     ApplyDefaultMaterial(hwnds);
                 }
             }
+			if (IDM_DEFCOR == menuItemId)
+			{
+				DefCor = TRUE;
+				Square = FALSE;
+				Round = FALSE;
+				SRound = FALSE;
+				for (const HWND& hwnds : hwndlist)
+				{
+					SetWindowRoundPreference(hwnds, DWMWCP_DEFAULT);
+				}
+			}
+			if (IDM_SQUARE == menuItemId)
+			{
+				DefCor = FALSE;
+				Square = TRUE;
+				Round = FALSE;
+				SRound = FALSE;
+				for (const HWND& hwnds : hwndlist)
+				{
+					SetWindowRoundPreference(hwnds, DWMWCP_DONOTROUND);
+				}
+			}
+			if (IDM_ROUND == menuItemId)
+			{
+				DefCor = FALSE;
+				Square = FALSE;
+				Round = TRUE;
+				SRound = FALSE;
+				for (const HWND& hwnds : hwndlist)
+				{
+					SetWindowRoundPreference(hwnds, DWMWCP_ROUND);
+				}
+			}
+			if (IDM_SROUND == menuItemId)
+			{
+				DefCor = FALSE;
+				Square = FALSE;
+				Round = FALSE;
+				SRound = TRUE;
+				for (const HWND& hwnds : hwndlist)
+				{
+					SetWindowRoundPreference(hwnds, DWMWCP_ROUNDSMALL);
+				}
+			}
             
         DestroyMenu(hMenu);
     }

@@ -15,6 +15,11 @@ BOOL Tabbed;
 BOOL DefaultCol;
 BOOL SysCol;
 
+BOOL DefCor;
+BOOL Square;
+BOOL Round;
+BOOL SRound;
+
 // WinEventHook
 HWINEVENTHOOK hEvent;
 
@@ -57,6 +62,11 @@ BOOL CobaltMicaEffect(HWND hwnd, BOOL allow)
 void SetSystemBackdropType(HWND hwnd, SystemBackdropType value)
 {
 	DwmSetWindowAttribute(hwnd, DWMWA_SYSTEMBACKDROP_TYPE, &value, sizeof value);
+}
+
+void SetWindowRoundPreference(HWND hwnd, DWM_WINDOW_CORNER_PREFERENCE value)
+{
+	DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE, &value, sizeof value);
 }
 
 BOOL ApplyMica(HWND hwnd)
