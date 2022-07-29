@@ -30,6 +30,10 @@
 #define IDM_TABBED                      32805
 #define IDM_GUI                         32815
 #define IDM_SYS                         32818
+#define IDM_DEFCOL                      32819
+#define ID_BACKDROPTYPEPREFERENCE_NONE  32820
+#define IDM_NONE                        32821
+#define IDM_SYSCOL                      32822
 #define IDC_STATIC                      -1
 
 // Next default values for new objects
@@ -38,7 +42,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NO_MFC                     1
 #define _APS_NEXT_RESOURCE_VALUE        131
-#define _APS_NEXT_COMMAND_VALUE         32819
+#define _APS_NEXT_COMMAND_VALUE         32823
 #define _APS_NEXT_CONTROL_VALUE         1005
 #define _APS_NEXT_SYMED_VALUE           110
 #endif

@@ -4,15 +4,16 @@
 NOTIFYICONDATA nidApp;
 
 // Menu items values
-BOOL Extend = FALSE;
-BOOL Dark = FALSE;
-BOOL System = FALSE;
-BOOL Light = FALSE;
-BOOL Mica = FALSE;
-BOOL DefaultBack = TRUE;
-BOOL Acrylic = FALSE;
-BOOL Tabbed = FALSE;
-BOOL DefaultCol = TRUE;
+BOOL Extend;
+BOOL Dark;
+BOOL Light;
+BOOL Mica;
+BOOL DefaultBack;
+BOOL None;
+BOOL Acrylic;
+BOOL Tabbed;
+BOOL DefaultCol;
+BOOL SysCol;
 
 // WinEventHook
 HWINEVENTHOOK hEvent;
@@ -90,10 +91,15 @@ BOOL ApplyTabbed(HWND hwnd)
     return TRUE;
 }
 
-BOOL ApplyNoMaterial(HWND hwnd)
+BOOL ApplyDefaultMaterial(HWND hwnd)
 {
     SetSystemBackdropType(hwnd, SystemBackdropType::Auto);
     return TRUE;
+}
+BOOL ApplyNoMaterial(HWND hwnd)
+{
+	SetSystemBackdropType(hwnd, SystemBackdropType::None);
+	return TRUE;
 }
 
 void SetWindowBlur(HWND hWnd)
@@ -179,6 +185,7 @@ BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
             *Dtc++ = (unsigned char)*src++;
         *Dtc = '\ 0';
 #endif
+
     }
     else
         return FALSE;
