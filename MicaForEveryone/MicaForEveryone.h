@@ -40,9 +40,4 @@ using fnShouldSystemUseDarkMode = bool (WINAPI*)(); // ordinal 138
 using fnSetPreferredAppMode = PreferredAppMode(WINAPI*)(PreferredAppMode appMode); // ordinal 135, in 1903
 using fnIsDarkModeAllowedForApp = bool (WINAPI*)(); // ordinal 
 
-
-
-// some functions used for dark mode
-fnSetPreferredAppMode SetPreferredAppMode;
-fnRefreshImmersiveColorPolicyState RefreshImmersiveColorPolicyState;
-fnAllowDarkModeForWindow AllowDarkModeForWindow;
+INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);

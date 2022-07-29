@@ -65,3 +65,4 @@ BOOL TrayIcon(HWND hWnd, HINSTANCE hInst);
 void DisableMaximizeButton(HWND hwnd);
 BOOL RtlGetVersion(OSVERSIONINFOEX* os);
 void SetWindowRoundPreference(HWND hwnd, DWM_WINDOW_CORNER_PREFERENCE value);
+void UpdateConfig();

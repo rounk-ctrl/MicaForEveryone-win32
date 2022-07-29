@@ -202,3 +202,45 @@ BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
     FreeLibrary(hMod);
     return TRUE;
 }
+void UpdateConfig() 
+{
+	LPCTSTR path = _T(".\\settings.ini");
+	TCHAR value[64];
+	GetPrivateProfileString(_T("global"), _T("TitleBarColor"), _T("Default"), value, 64, path);
+	if (!_tcscmp(value, _T("Default")))
+		DefaultCol = TRUE;
+	else if (!_tcscmp(value, _T("System")))
+		SysCol = TRUE;
+	else if (!_tcscmp(value, _T("Light")))
+		Light = TRUE;
+	else if (!_tcscmp(value, _T("Dark")))
+		Dark = TRUE;
+
+	GetPrivateProfileString(_T("global"), _T("BackdropPreference"), _T("Default"), value, 64, path);
+	if (!_tcscmp(value, _T("Default")))
+		DefaultBack = TRUE;
+	else if (!_tcscmp(value, _T("None")))
+		None = TRUE;
+	else if (!_tcscmp(value, _T("Mica")))
+		Mica = TRUE;
+	else if (!_tcscmp(value, _T("Acrylic")))
+		Acrylic = TRUE;
+	else if (!_tcscmp(value, _T("Tabbed")))
+		Tabbed = TRUE;
+
+	GetPrivateProfileString(_T("global"), _T("ExtendFrameIntoClientArea"), _T("Default"), value, 64, path);
+	if (!_tcscmp(value, _T("False")))
+		Extend = FALSE;
+	else if (!_tcscmp(value, _T("True")))
+		Extend = TRUE;
+
+	GetPrivateProfileString(_T("global"), _T("CornerPreference"), _T("Default"), value, 64, path);
+	if (!_tcscmp(value, _T("Default")))
+		DefCor = TRUE;
+	else if (!_tcscmp(value, _T("Square")))
+		Square = TRUE;
+	else if (!_tcscmp(value, _T("Rounded")))
+		Round = TRUE;
+	else if (!_tcscmp(value, _T("RoundedSmall")))
+		SRound = TRUE;
+}

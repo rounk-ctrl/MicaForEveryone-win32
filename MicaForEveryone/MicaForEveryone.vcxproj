@@ -144,6 +144,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ContextMenuHandler.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="MicaForEveryone.h" />
     <ClInclude Include="MicaForEveryoneHelper.h" />
@@ -151,6 +152,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ContextMenuHandler.cpp" />
     <ClCompile Include="MicaForEveryone.cpp" />
     <ClCompile Include="MicaForEveryoneHelper.cpp" />
   </ItemGroup>
