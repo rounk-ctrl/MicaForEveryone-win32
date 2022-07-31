@@ -33,6 +33,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	MyRegisterClass(hInstance);
 
 	UpdateConfig();
+	std::ifstream t(_T(".\\settings.ini"));
+	std::stringstream buffer;
+	buffer << t.rdbuf();
+	const std::string ee = buffer.str();
+	std::regex reg(R"(^[\s]*\[process:\s*(\w+)\]$)");
+	std::sregex_iterator iter(ee.begin(), ee.end(), reg);
+	std::sregex_iterator end;
+	while (iter != end)
+	{
+		for (unsigned i = 0; i < iter->size(); ++i)
+		{
+			MessageBoxA(0, (*iter)[i].str().c_str(), "e", 0);
+		}
+		++iter;
+	}
+
 
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))

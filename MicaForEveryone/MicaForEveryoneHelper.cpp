@@ -202,9 +202,9 @@ BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
     FreeLibrary(hMod);
     return TRUE;
 }
+const LPCTSTR path = _T(".\\settings.ini");
 void UpdateConfig() 
 {
-	LPCTSTR path = _T(".\\settings.ini");
 	TCHAR value[64];
 	GetPrivateProfileString(_T("global"), _T("TitleBarColor"), _T("Default"), value, 64, path);
 	if (!_tcscmp(value, _T("Default")))
@@ -244,3 +244,4 @@ void UpdateConfig()
 	else if (!_tcscmp(value, _T("RoundedSmall")))
 		SRound = TRUE;
 }
+
