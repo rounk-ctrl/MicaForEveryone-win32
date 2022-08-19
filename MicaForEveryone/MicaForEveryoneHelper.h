@@ -27,6 +27,19 @@ typedef enum {
 	DWMWCP_ROUNDSMALL = 3
 } DWM_WINDOW_CORNER_PREFERENCE;
 
+class Window
+{
+private:
+	HWND m_hwnd;
+	DWORD m_pid;
+	TCHAR* m_name;
+public:
+	HWND GetHwnd() const { return m_hwnd; }
+	Window(HWND hwnd, DWORD pid, TCHAR* name)
+		: m_hwnd(hwnd), m_pid(pid), m_name(name)
+	{}
+};
+
 extern BOOL Extend;
 extern BOOL Dark;
 extern BOOL Light;
@@ -38,7 +51,6 @@ extern BOOL DefaultCol;
 extern BOOL SysCol;
 extern NOTIFYICONDATA nidApp;
 extern HWINEVENTHOOK hEvent;
-extern std::vector<HWND> hwndlist;
 extern MARGINS margins;
 extern MENUITEMINFO mi;
 extern OSVERSIONINFOEX os;
@@ -53,6 +65,7 @@ extern BOOL Round;
 extern BOOL SRound;
 extern std::vector<TCHAR*> procnamelist;
 
+extern std::vector<Window> hwndlist;
 extern std::vector<const char*> rulelist;
 extern std::vector<const char*> processlist;
 

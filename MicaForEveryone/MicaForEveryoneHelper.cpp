@@ -27,7 +27,7 @@ std::vector<const char*> processlist;
 HWINEVENTHOOK hEvent;
 
 // list for all top level windows
-std::vector<HWND> hwndlist;
+std::vector<Window> hwndlist;
 std::vector<TCHAR*> procnamelist;
 
 // DwmExtendFrameIntoClientArea margins
@@ -49,7 +49,6 @@ HICON hMainIcon;
 // point used to spawn the menu where your cursor is
 POINT ok;
 HKEY hKeyPersonalization;
-
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode)
 {
@@ -88,27 +87,27 @@ BOOL ApplyMica(HWND hwnd)
 
 BOOL ApplyAcrylic(HWND hwnd)
 {
-    if (os.dwBuildNumber <= 22000)
-    {
-        SetWindowBlur(hwnd);
-    }
-    else if (os.dwBuildNumber >= 22523)
-    {
-        SetSystemBackdropType(hwnd, SystemBackdropType::Acrylic);
-    }
+	if (os.dwBuildNumber <= 22000)
+	{
+		SetWindowBlur(hwnd);
+	}
+	else if (os.dwBuildNumber >= 22523)
+	{
+		SetSystemBackdropType(hwnd, SystemBackdropType::Acrylic);
+	}
 	return TRUE;
 }
 
 BOOL ApplyTabbed(HWND hwnd)
 {
-    SetSystemBackdropType(hwnd, SystemBackdropType::Tabbed);
-    return TRUE;
+	SetSystemBackdropType(hwnd, SystemBackdropType::Tabbed);
+	return TRUE;
 }
 
 BOOL ApplyDefaultMaterial(HWND hwnd)
 {
-    SetSystemBackdropType(hwnd, SystemBackdropType::Auto);
-    return TRUE;
+	SetSystemBackdropType(hwnd, SystemBackdropType::Auto);
+	return TRUE;
 }
 BOOL ApplyNoMaterial(HWND hwnd)
 {
@@ -118,93 +117,93 @@ BOOL ApplyNoMaterial(HWND hwnd)
 
 void SetWindowBlur(HWND hWnd)
 {
-    const HINSTANCE hModule = LoadLibrary(TEXT("user32.dll"));
-    if (hModule)
-    {
-        struct ACCENTPOLICY
-        {
-            int nAccentState;
-            int nFlags;
-            int nColor;
-            int nAnimationId;
-        };
-        struct WINCOMPATTRDATA
-        {
-            int nAttribute;
-            PVOID pData;
-            ULONG ulDataSize;
-        };
-        typedef BOOL(WINAPI* pSetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
-        const pSetWindowCompositionAttribute SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(hModule, "SetWindowCompositionAttribute");
-        if (SetWindowCompositionAttribute)
-        {
-            ACCENTPOLICY policy = { 3, 0, 0, 0 };
-            WINCOMPATTRDATA data = { 19, &policy, sizeof(ACCENTPOLICY) }; // WCA_ACCENT_POLICY=19
-            SetWindowCompositionAttribute(hWnd, &data);
-        }
-        FreeLibrary(hModule);
-    }
+	const HINSTANCE hModule = LoadLibrary(TEXT("user32.dll"));
+	if (hModule)
+	{
+		struct ACCENTPOLICY
+		{
+			int nAccentState;
+			int nFlags;
+			int nColor;
+			int nAnimationId;
+		};
+		struct WINCOMPATTRDATA
+		{
+			int nAttribute;
+			PVOID pData;
+			ULONG ulDataSize;
+		};
+		typedef BOOL(WINAPI* pSetWindowCompositionAttribute)(HWND, WINCOMPATTRDATA*);
+		const pSetWindowCompositionAttribute SetWindowCompositionAttribute = (pSetWindowCompositionAttribute)GetProcAddress(hModule, "SetWindowCompositionAttribute");
+		if (SetWindowCompositionAttribute)
+		{
+			ACCENTPOLICY policy = { 3, 0, 0, 0 };
+			WINCOMPATTRDATA data = { 19, &policy, sizeof(ACCENTPOLICY) }; // WCA_ACCENT_POLICY=19
+			SetWindowCompositionAttribute(hWnd, &data);
+		}
+		FreeLibrary(hModule);
+	}
 }
 
 BOOL TrayIcon(HWND hWnd, HINSTANCE hInst)
 {
-    hMainIcon = LoadIcon(hInst, (LPCTSTR)MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
-    nidApp.cbSize = sizeof(NOTIFYICONDATA);
-    nidApp.hWnd = (HWND)hWnd;
-    nidApp.uID = IDI_MICAFOREVERYONE;
-    nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
-    nidApp.hIcon = hMainIcon;
-    nidApp.uCallbackMessage = WM_USER_SHELLICON;
-    nidApp.uVersion = NOTIFYICON_VERSION_4;
-    LoadString(hInst, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
-    Shell_NotifyIcon(NIM_ADD, &nidApp);
-    return TRUE;
+	hMainIcon = LoadIcon(hInst, (LPCTSTR)MAKEINTRESOURCE(IDI_MICAFOREVERYONE));
+	nidApp.cbSize = sizeof(NOTIFYICONDATA);
+	nidApp.hWnd = (HWND)hWnd;
+	nidApp.uID = IDI_MICAFOREVERYONE;
+	nidApp.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
+	nidApp.hIcon = hMainIcon;
+	nidApp.uCallbackMessage = WM_USER_SHELLICON;
+	nidApp.uVersion = NOTIFYICON_VERSION_4;
+	LoadString(hInst, IDS_APPTOOLTIP, nidApp.szTip, MAX_LOADSTRING);
+	Shell_NotifyIcon(NIM_ADD, &nidApp);
+	return TRUE;
 }
 
 void DisableMaximizeButton(HWND hwnd)
 {
-    SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_MAXIMIZEBOX);
+	SetWindowLong(hwnd, GWL_STYLE, GetWindowLong(hwnd, GWL_STYLE) & ~WS_MAXIMIZEBOX);
 }
 
 BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
-    HMODULE hMod;
-    RtlGetVersion_FUNC func;
+	HMODULE hMod;
+	RtlGetVersion_FUNC func;
 #ifdef UNICODE
-    OSVERSIONINFOEXW* osw = os;
+	OSVERSIONINFOEXW* osw = os;
 #else
-    OSVERSIONINFOEXW o;
-    OSVERSIONINFOEXW* osw = &o;
+	OSVERSIONINFOEXW o;
+	OSVERSIONINFOEXW* osw = &o;
 #endif
 
-    hMod = LoadLibrary(TEXT("ntdll.dll"));
-    if (hMod) {
-        func = (RtlGetVersion_FUNC)GetProcAddress(hMod, "RtlGetVersion");
-        if (func == 0) {
-            FreeLibrary(hMod);
-            return FALSE;
-        }
-        ZeroMemory(osw, sizeof(*osw));
-        osw->dwOSVersionInfoSize = sizeof(*osw);
-        func(osw);
+	hMod = LoadLibrary(TEXT("ntdll.dll"));
+	if (hMod) {
+		func = (RtlGetVersion_FUNC)GetProcAddress(hMod, "RtlGetVersion");
+		if (func == 0) {
+			FreeLibrary(hMod);
+			return FALSE;
+		}
+		ZeroMemory(osw, sizeof(*osw));
+		osw->dwOSVersionInfoSize = sizeof(*osw);
+		func(osw);
 #ifndef UNICODE
-        os->dwBuildNumber = osw->dwBuildNumber;
-        os->dwMajorVersion = osw->dwMajorVersion;
-        os->dwMinorVersion = osw->dwMinorVersion;
-        os->dwPlatformId = osw->dwPlatformId;
-        os->dwOSVersionInfoSize = sizeof(*os);
-        DWORD sz = sizeof(os->szCSDVersion);
-        WCHAR* src = osw->szCSDVersion;
-        unsigned char* dtc = (unsigned char*)os->szCSDVersion;
-        while (*src)
-            *Dtc++ = (unsigned char)*src++;
-        *Dtc = '\ 0';
+		os->dwBuildNumber = osw->dwBuildNumber;
+		os->dwMajorVersion = osw->dwMajorVersion;
+		os->dwMinorVersion = osw->dwMinorVersion;
+		os->dwPlatformId = osw->dwPlatformId;
+		os->dwOSVersionInfoSize = sizeof(*os);
+		DWORD sz = sizeof(os->szCSDVersion);
+		WCHAR* src = osw->szCSDVersion;
+		unsigned char* dtc = (unsigned char*)os->szCSDVersion;
+		while (*src)
+			*Dtc++ = (unsigned char)*src++;
+		*Dtc = '\ 0';
 #endif
 
-    }
-    else
-        return FALSE;
-    FreeLibrary(hMod);
-    return TRUE;
+	}
+	else
+		return FALSE;
+	FreeLibrary(hMod);
+	return TRUE;
 }
 int IsExplorerDarkTheme()
 {
@@ -226,7 +225,7 @@ int IsExplorerDarkTheme()
 	return ERROR_SUCCESS == nError ? !nResult : FALSE;
 }
 const LPCTSTR path = _T(".\\settings.ini");
-void UpdateConfig() 
+void UpdateConfig()
 {
 	TCHAR value[64];
 	GetPrivateProfileString(_T("global"), _T("TitleBarColor"), _T("Default"), value, 64, path);
@@ -298,34 +297,34 @@ void MatchAndApplyRule(int DarkThemeEnabled, int type, HWND hwnd)
 {
 	if (type == 1)
 	{
-		for (const HWND& hwnds : hwndlist)
+		for (const Window& window : hwndlist)
 		{
 			if (Extend)
-				DwmExtendFrameIntoClientArea(hwnds, &margins);
+				DwmExtendFrameIntoClientArea(window.GetHwnd(), &margins);
 			else if (SysCol)
-				ApplyDarkTitleBar(hwnds, DarkThemeEnabled);
+				ApplyDarkTitleBar(window.GetHwnd(), DarkThemeEnabled);
 			else if (Light)
-				ApplyDarkTitleBar(hwnds, FALSE);
+				ApplyDarkTitleBar(window.GetHwnd(), FALSE);
 			else if (Dark)
-				ApplyDarkTitleBar(hwnds, TRUE);
+				ApplyDarkTitleBar(window.GetHwnd(), TRUE);
 			else if (None)
-				ApplyNoMaterial(hwnds);
+				ApplyNoMaterial(window.GetHwnd());
 			else if (Mica)
-				ApplyMica(hwnds);
+				ApplyMica(window.GetHwnd());
 			else if (Acrylic)
-				ApplyAcrylic(hwnds);
+				ApplyAcrylic(window.GetHwnd());
 			else if (Tabbed)
-				ApplyTabbed(hwnds);
+				ApplyTabbed(window.GetHwnd());
 			else if (DefaultBack)
-				ApplyDefaultMaterial(hwnds);
+				ApplyDefaultMaterial(window.GetHwnd());
 			else if (DefCor)
-				SetWindowRoundPreference(hwnds, DWMWCP_DEFAULT);
+				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_DEFAULT);
 			else if (Square)
-				SetWindowRoundPreference(hwnds, DWMWCP_DONOTROUND);
+				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_DONOTROUND);
 			else if (Round)
-				SetWindowRoundPreference(hwnds, DWMWCP_ROUND);
+				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_ROUND);
 			else if (SRound)
-				SetWindowRoundPreference(hwnds, DWMWCP_ROUNDSMALL);
+				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_ROUNDSMALL);
 		}
 	}
 	else if (type == 2)
@@ -357,5 +356,4 @@ void MatchAndApplyRule(int DarkThemeEnabled, int type, HWND hwnd)
 		else if (SRound)
 			SetWindowRoundPreference(hwnd, DWMWCP_ROUNDSMALL);
 	}
-	
 }

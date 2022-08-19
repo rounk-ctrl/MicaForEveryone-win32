@@ -15,7 +15,6 @@ int DarkThemeEnabled;
 
 std::vector<LPWSTR> classlist;
 
-
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -133,10 +132,28 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    DisableMaximizeButton(hWnd);
    return TRUE;
 }
+
 BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam)
 {
-    std::vector<HWND>& hwnds = *reinterpret_cast<std::vector<HWND>*>(lParam);
-	hwnds.push_back(hwnd); 
+    TCHAR szProcessName[MAX_PATH];
+    DWORD lpdwProcessId;
+
+    GetWindowThreadProcessId(hwnd, &lpdwProcessId);
+    if (lpdwProcessId)
+    {
+        HANDLE Handle = OpenProcess(
+            PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+            FALSE,
+            lpdwProcessId /* This is the PID, you can find one from windows task manager */
+        );
+        if (Handle)
+        {
+            GetModuleBaseName(Handle, NULL, szProcessName, sizeof(szProcessName) / sizeof(TCHAR));
+        }
+    }
+    std::vector<Window>& hwnds = *reinterpret_cast<std::vector<Window>*>(lParam);
+    Window win(hwnd, lpdwProcessId, szProcessName);
+    hwnds.push_back(win);
     return TRUE;
 }
 VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
