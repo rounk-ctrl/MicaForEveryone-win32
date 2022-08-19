@@ -11,11 +11,16 @@
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
 WCHAR szWindowClass[MAX_LOADSTRING];            // the main window class name
+int DarkThemeEnabled;
+
+std::vector<LPWSTR> classlist;
+
 
 // Forward declarations of functions included in this code module:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+BOOL CALLBACK		hwndcallback(HWND, LPARAM);
 
 // some functions used for dark mode
 fnSetPreferredAppMode SetPreferredAppMode;
@@ -32,23 +37,29 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	LoadStringW(hInstance, IDC_MICAFOREVERYONE, szWindowClass, MAX_LOADSTRING);
 	MyRegisterClass(hInstance);
 
+    EnableDebugPriv();
 	UpdateConfig();
 	std::ifstream t(_T(".\\settings.ini"));
 	std::stringstream buffer;
 	buffer << t.rdbuf();
 	const std::string ee = buffer.str();
-	std::regex reg(R"(^[\s]*\[process:\s*(\w+)\]$)");
+	std::regex reg(R"(^[\s]*\[process:\s*(\w+.*)\]$)");
 	std::sregex_iterator iter(ee.begin(), ee.end(), reg);
 	std::sregex_iterator end;
+
 	while (iter != end)
 	{
 		for (unsigned i = 0; i < iter->size(); ++i)
 		{
-			MessageBoxA(0, (*iter)[i].str().c_str(), "e", 0);
+			if (i % 2 != 0)
+				processlist.push_back((*iter)[i].str().c_str());
+			else if (i % 2 == 0)
+				rulelist.push_back((*iter)[i].str().c_str());
 		}
 		++iter;
 	}
-
+	DarkThemeEnabled = IsExplorerDarkTheme();
+	EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
 
     // Perform application initialization:
     if (!InitInstance (hInstance, nCmdShow))
@@ -102,26 +113,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
 //        create and display the main program window.
 //
 HMODULE hUxtheme = LoadLibraryExW(L"uxtheme.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-int IsExplorerDarkTheme()
-{
-    RegOpenKeyEx(
-        HKEY_CURRENT_USER,
-        L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-        0, KEY_READ, &hKeyPersonalization
-    );
-    DWORD dwBufferSize(sizeof(DWORD));
-    DWORD nResult(0);
-    LONG nError = RegQueryValueEx(
-        hKeyPersonalization,
-        L"AppsUseLightTheme",
-        0,
-        NULL,
-        reinterpret_cast<LPBYTE>(&nResult),
-        &dwBufferSize
-    );
-    return ERROR_SUCCESS == nError ? !nResult : FALSE;
-}
-int DarkThemeEnabled;
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 {
    hInst = hInstance; // Store instance handle in our global variable
@@ -142,42 +133,20 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    DisableMaximizeButton(hWnd);
    return TRUE;
 }
-BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam) {
-    std::vector<HWND>& hwnds =
-        *reinterpret_cast<std::vector<HWND>*>(lParam);
-    hwnds.push_back(hwnd);
+BOOL CALLBACK hwndcallback(HWND hwnd, LPARAM lParam)
+{
+    std::vector<HWND>& hwnds = *reinterpret_cast<std::vector<HWND>*>(lParam);
+	hwnds.push_back(hwnd); 
     return TRUE;
 }
-
 VOID CALLBACK WinEventProcCallback(HWINEVENTHOOK hWinEventHook, DWORD dwEvent, HWND hwnd, LONG idObject, LONG idChild, DWORD dwEventThread, DWORD dwmsEventTime)
 {
     if (dwEvent == EVENT_OBJECT_CREATE)
     {
         if (IsWindow(hwnd))
         {
-			if (SysCol)
-			{
-				DarkThemeEnabled = IsExplorerDarkTheme();
-				ApplyDarkTitleBar(hwnd, DarkThemeEnabled);
-			}
-            if (Light)
-                ApplyDarkTitleBar(hwnd, FALSE);
-            if (Dark)
-                ApplyDarkTitleBar(hwnd, TRUE);
-			if (None)
-				SetSystemBackdropType(hwnd, SystemBackdropType::None);
-            if (Mica)
-                ApplyMica(hwnd);
-            if (Acrylic)
-                ApplyAcrylic(hwnd);
-            if (Tabbed)
-                ApplyTabbed(hwnd);
-			if (Square)
-				SetWindowRoundPreference(hwnd, DWMWCP_DONOTROUND);
-			if (Round)
-				SetWindowRoundPreference(hwnd, DWMWCP_ROUND);
-			if (SRound)
-				SetWindowRoundPreference(hwnd, DWMWCP_ROUNDSMALL);
+			DarkThemeEnabled = IsExplorerDarkTheme();
+			MatchAndApplyRule(DarkThemeEnabled, 2, hwnd);
         }
     }
 }
@@ -194,7 +163,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     HBRUSH brush = CreateSolidBrush(darkBkColor);
     RtlGetVersion(&os);
-    static UINT s_uTaskbarRestart; 
+    static UINT s_uTaskbarRestart;
     switch (message)
     {
     case WM_CREATE:
@@ -202,6 +171,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         hEvent = SetWinEventHook(EVENT_OBJECT_CREATE, EVENT_OBJECT_CREATE, NULL,
             WinEventProcCallback, 0, 0, WINEVENT_OUTOFCONTEXT | WINEVENT_SKIPOWNTHREAD);
         s_uTaskbarRestart = RegisterWindowMessage(TEXT("TaskbarCreated"));
+		EnableDebugPriv();
     }
         break;
     case WM_CLOSE:
@@ -215,12 +185,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         {
         case WM_RBUTTONDOWN:
             GetCursorPos(&ok);
-            EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
 			DarkThemeEnabled = IsExplorerDarkTheme();
 			UpdateConfig();
+			EnumWindows(hwndcallback, reinterpret_cast<LPARAM>(&hwndlist));
+			
             ShowContextMenu(hWnd, ok, hInst, DarkThemeEnabled);
             return TRUE;
         }
+        break;
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);

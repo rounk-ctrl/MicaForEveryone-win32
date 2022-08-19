@@ -162,10 +162,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			{
 				Extend = TRUE;
 				WritePrivateProfileString(L"global", L"ExtendFrameIntoClientArea", L" True", path);
-				for (const HWND& hwnds : hwndlist)
-				{
-					DwmExtendFrameIntoClientArea(hwnds, &margins);
-				}
+				MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 			}
 		}
 		if (IDM_EXIT == menuItemId)
@@ -184,11 +181,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Dark = TRUE;
 			Light = FALSE;
 			WritePrivateProfileString(L"global", L"TitleBarColor", L" Dark", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyDarkTitleBar(hwnds, TRUE);
-			}
-
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_LIGHT == menuItemId)
 		{
@@ -197,10 +190,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Light = TRUE;
 			Dark = FALSE;
 			WritePrivateProfileString(L"global", L"TitleBarColor", L" Light", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyDarkTitleBar(hwnds, FALSE);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 
 		if (IDM_SYSCOL == menuItemId)
@@ -210,10 +200,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Light = FALSE;
 			Dark = FALSE;
 			WritePrivateProfileString(L"global", L"TitleBarColor", L" System", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyDarkTitleBar(hwnds, DarkThemeEnabled);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_DEFCOL == menuItemId)
 		{
@@ -231,10 +218,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Acrylic = FALSE;
 			Tabbed = FALSE;
 			WritePrivateProfileString(L"global", L"BackdropPreference", L" None", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyNoMaterial(hwnds);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_MICA == menuItemId)
 		{
@@ -244,10 +228,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Acrylic = FALSE;
 			Tabbed = FALSE;
 			WritePrivateProfileString(L"global", L"BackdropPreference", L" Mica", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyMica(hwnds);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_ACRYLIC == menuItemId)
 		{
@@ -257,10 +238,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Acrylic = TRUE;
 			Tabbed = FALSE;
 			WritePrivateProfileString(L"global", L"BackdropPreference", L" Acrylic", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyAcrylic(hwnds);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_TABBED == menuItemId)
 		{
@@ -270,10 +248,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Acrylic = FALSE;
 			Tabbed = TRUE;
 			WritePrivateProfileString(L"global", L"BackdropPreference", L" Tabbed", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyTabbed(hwnds);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_DEFAULTBACK == menuItemId)
 		{
@@ -283,10 +258,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Acrylic = FALSE;
 			Tabbed = FALSE;
 			WritePrivateProfileString(L"global", L"BackdropPreference", L" Default", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				ApplyDefaultMaterial(hwnds);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_DEFCOR == menuItemId)
 		{
@@ -295,10 +267,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Round = FALSE;
 			SRound = FALSE;
 			WritePrivateProfileString(L"global", L"CornerPreference", L" Default", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				SetWindowRoundPreference(hwnds, DWMWCP_DEFAULT);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_SQUARE == menuItemId)
 		{
@@ -307,10 +276,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Round = FALSE;
 			SRound = FALSE;
 			WritePrivateProfileString(L"global", L"CornerPreference", L" Square", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				SetWindowRoundPreference(hwnds, DWMWCP_DONOTROUND);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_ROUND == menuItemId)
 		{
@@ -319,10 +285,7 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Round = TRUE;
 			SRound = FALSE;
 			WritePrivateProfileString(L"global", L"CornerPreference", L" Rounded", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				SetWindowRoundPreference(hwnds, DWMWCP_ROUND);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
 		if (IDM_SROUND == menuItemId)
 		{
@@ -331,12 +294,8 @@ void ShowContextMenu(HWND hwnd, POINT pt, HINSTANCE hInst, int DarkThemeEnabled)
 			Round = FALSE;
 			SRound = TRUE;
 			WritePrivateProfileString(L"global", L"CornerPreference", L" RoundedSmall", path);
-			for (const HWND& hwnds : hwndlist)
-			{
-				SetWindowRoundPreference(hwnds, DWMWCP_ROUNDSMALL);
-			}
+			MatchAndApplyRule(DarkThemeEnabled, 1, 0);
 		}
-
 		DestroyMenu(hMenu);
 	}
 }

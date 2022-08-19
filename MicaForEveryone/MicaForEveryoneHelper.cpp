@@ -20,11 +20,15 @@ BOOL Square;
 BOOL Round;
 BOOL SRound;
 
+std::vector<const char*> rulelist;
+std::vector<const char*> processlist;
+
 // WinEventHook
 HWINEVENTHOOK hEvent;
 
 // list for all top level windows
 std::vector<HWND> hwndlist;
+std::vector<TCHAR*> procnamelist;
 
 // DwmExtendFrameIntoClientArea margins
 MARGINS margins = { -1 };
@@ -202,6 +206,25 @@ BOOL RtlGetVersion(OSVERSIONINFOEX* os) {
     FreeLibrary(hMod);
     return TRUE;
 }
+int IsExplorerDarkTheme()
+{
+	RegOpenKeyEx(
+		HKEY_CURRENT_USER,
+		L"SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+		0, KEY_READ, &hKeyPersonalization
+	);
+	DWORD dwBufferSize(sizeof(DWORD));
+	DWORD nResult(0);
+	LONG nError = RegQueryValueEx(
+		hKeyPersonalization,
+		L"AppsUseLightTheme",
+		0,
+		NULL,
+		reinterpret_cast<LPBYTE>(&nResult),
+		&dwBufferSize
+	);
+	return ERROR_SUCCESS == nError ? !nResult : FALSE;
+}
 const LPCTSTR path = _T(".\\settings.ini");
 void UpdateConfig() 
 {
@@ -244,4 +267,95 @@ void UpdateConfig()
 	else if (!_tcscmp(value, _T("RoundedSmall")))
 		SRound = TRUE;
 }
+std::wstring widen(const std::string& str)
+{
+	std::wostringstream wstm;
+	const std::ctype<wchar_t>& ctfacet = std::use_facet<std::ctype<wchar_t>>(wstm.getloc());
+	for (size_t i = 0; i < str.size(); ++i)
+		wstm << ctfacet.widen(str[i]);
+	return wstm.str();
+}
 
+void EnableDebugPriv()
+{
+	HANDLE hToken;
+	LUID luid;
+	TOKEN_PRIVILEGES tkp;
+
+	OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken);
+
+	LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &luid);
+
+	tkp.PrivilegeCount = 1;
+	tkp.Privileges[0].Luid = luid;
+	tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+	AdjustTokenPrivileges(hToken, false, &tkp, sizeof(tkp), NULL, NULL);
+
+	CloseHandle(hToken);
+}
+void MatchAndApplyRule(int DarkThemeEnabled, int type, HWND hwnd)
+{
+	if (type == 1)
+	{
+		for (const HWND& hwnds : hwndlist)
+		{
+			if (Extend)
+				DwmExtendFrameIntoClientArea(hwnds, &margins);
+			else if (SysCol)
+				ApplyDarkTitleBar(hwnds, DarkThemeEnabled);
+			else if (Light)
+				ApplyDarkTitleBar(hwnds, FALSE);
+			else if (Dark)
+				ApplyDarkTitleBar(hwnds, TRUE);
+			else if (None)
+				ApplyNoMaterial(hwnds);
+			else if (Mica)
+				ApplyMica(hwnds);
+			else if (Acrylic)
+				ApplyAcrylic(hwnds);
+			else if (Tabbed)
+				ApplyTabbed(hwnds);
+			else if (DefaultBack)
+				ApplyDefaultMaterial(hwnds);
+			else if (DefCor)
+				SetWindowRoundPreference(hwnds, DWMWCP_DEFAULT);
+			else if (Square)
+				SetWindowRoundPreference(hwnds, DWMWCP_DONOTROUND);
+			else if (Round)
+				SetWindowRoundPreference(hwnds, DWMWCP_ROUND);
+			else if (SRound)
+				SetWindowRoundPreference(hwnds, DWMWCP_ROUNDSMALL);
+		}
+	}
+	else if (type == 2)
+	{
+		if (Extend)
+			DwmExtendFrameIntoClientArea(hwnd, &margins);
+		else if (SysCol)
+			ApplyDarkTitleBar(hwnd, DarkThemeEnabled);
+		else if (Light)
+			ApplyDarkTitleBar(hwnd, FALSE);
+		else if (Dark)
+			ApplyDarkTitleBar(hwnd, TRUE);
+		else if (None)
+			ApplyNoMaterial(hwnd);
+		else if (Mica)
+			ApplyMica(hwnd);
+		else if (Acrylic)
+			ApplyAcrylic(hwnd);
+		else if (Tabbed)
+			ApplyTabbed(hwnd);
+		else if (DefaultBack)
+			ApplyDefaultMaterial(hwnd);
+		else if (DefCor)
+			SetWindowRoundPreference(hwnd, DWMWCP_DEFAULT);
+		else if (Square)
+			SetWindowRoundPreference(hwnd, DWMWCP_DONOTROUND);
+		else if (Round)
+			SetWindowRoundPreference(hwnd, DWMWCP_ROUND);
+		else if (SRound)
+			SetWindowRoundPreference(hwnd, DWMWCP_ROUNDSMALL);
+	}
+	
+}

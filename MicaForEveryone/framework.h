@@ -20,6 +20,8 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <Psapi.h>
+#include <set>
 #include <atlstr.h>
 #pragma comment(lib, "dwmapi.lib")
 #include <stdio.h>

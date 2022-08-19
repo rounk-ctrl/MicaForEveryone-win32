@@ -51,6 +51,11 @@ extern BOOL DefCor;
 extern BOOL Square;
 extern BOOL Round;
 extern BOOL SRound;
+extern std::vector<TCHAR*> procnamelist;
+
+extern std::vector<const char*> rulelist;
+extern std::vector<const char*> processlist;
+
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode);
 BOOL CobaltMicaEffect(HWND hwnd, BOOL allow);
@@ -66,3 +71,6 @@ void DisableMaximizeButton(HWND hwnd);
 BOOL RtlGetVersion(OSVERSIONINFOEX* os);
 void SetWindowRoundPreference(HWND hwnd, DWM_WINDOW_CORNER_PREFERENCE value);
 void UpdateConfig();
+void MatchAndApplyRule(int DarkThemeEnabled, int type, HWND hwnd);
+int IsExplorerDarkTheme();
+void EnableDebugPriv();
