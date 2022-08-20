@@ -32,10 +32,12 @@ class Window
 private:
 	HWND m_hwnd;
 	DWORD m_pid;
-	TCHAR* m_name;
+	std::wstring m_name;
 public:
 	HWND GetHwnd() const { return m_hwnd; }
-	Window(HWND hwnd, DWORD pid, TCHAR* name)
+	std::wstring GetProcName() const { return m_name; }
+	DWORD GetPid() const { return m_pid; }
+	Window(HWND hwnd, DWORD pid, std::wstring name)
 		: m_hwnd(hwnd), m_pid(pid), m_name(name)
 	{}
 };
@@ -66,8 +68,8 @@ extern BOOL SRound;
 extern std::vector<TCHAR*> procnamelist;
 
 extern std::vector<Window> hwndlist;
-extern std::vector<const char*> rulelist;
-extern std::vector<const char*> processlist;
+extern std::vector<std::string> rulelist;
+extern std::vector<std::string> processlist;
 
 
 BOOL ApplyDarkTitleBar(HWND hwnd, BOOL mode);
@@ -83,7 +85,7 @@ BOOL TrayIcon(HWND hWnd, HINSTANCE hInst);
 void DisableMaximizeButton(HWND hwnd);
 BOOL RtlGetVersion(OSVERSIONINFOEX* os);
 void SetWindowRoundPreference(HWND hwnd, DWM_WINDOW_CORNER_PREFERENCE value);
-void UpdateConfig();
+void UpdateConfig(std::wstring name);
 void MatchAndApplyRule(int DarkThemeEnabled, int type, HWND hwnd);
 int IsExplorerDarkTheme();
 void EnableDebugPriv();

@@ -22,6 +22,10 @@
 #include <iostream>
 #include <Psapi.h>
 #include <set>
+#include <locale>
+#include <codecvt>
+#include <algorithm>
+#include <string>
 #include <atlstr.h>
 #pragma comment(lib, "dwmapi.lib")
 #include <stdio.h>

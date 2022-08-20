@@ -20,8 +20,8 @@ BOOL Square;
 BOOL Round;
 BOOL SRound;
 
-std::vector<const char*> rulelist;
-std::vector<const char*> processlist;
+std::vector<std::string> rulelist;
+std::vector<std::string> processlist;
 
 // WinEventHook
 HWINEVENTHOOK hEvent;
@@ -225,10 +225,10 @@ int IsExplorerDarkTheme()
 	return ERROR_SUCCESS == nError ? !nResult : FALSE;
 }
 const LPCTSTR path = _T(".\\settings.ini");
-void UpdateConfig()
+void UpdateConfig(std::wstring name)
 {
 	TCHAR value[64];
-	GetPrivateProfileString(_T("global"), _T("TitleBarColor"), _T("Default"), value, 64, path);
+	GetPrivateProfileString(name.c_str(), _T("TitleBarColor"), _T("Default"), value, 64, path);
 	if (!_tcscmp(value, _T("Default")))
 		DefaultCol = TRUE;
 	else if (!_tcscmp(value, _T("System")))
@@ -237,8 +237,15 @@ void UpdateConfig()
 		Light = TRUE;
 	else if (!_tcscmp(value, _T("Dark")))
 		Dark = TRUE;
+	else
+	{
+		SysCol = FALSE;
+		Dark = FALSE;
+		Light = FALSE;
+		DefaultCol = TRUE;
+	}
 
-	GetPrivateProfileString(_T("global"), _T("BackdropPreference"), _T("Default"), value, 64, path);
+	GetPrivateProfileString(name.c_str(), _T("BackdropPreference"), _T("Default"), value, 64, path);
 	if (!_tcscmp(value, _T("Default")))
 		DefaultBack = TRUE;
 	else if (!_tcscmp(value, _T("None")))
@@ -249,14 +256,24 @@ void UpdateConfig()
 		Acrylic = TRUE;
 	else if (!_tcscmp(value, _T("Tabbed")))
 		Tabbed = TRUE;
+	else
+	{
+		None = FALSE;
+		Mica = FALSE;
+		Acrylic = FALSE;
+		Tabbed = FALSE;
+		DefaultBack = TRUE;
+	}
 
-	GetPrivateProfileString(_T("global"), _T("ExtendFrameIntoClientArea"), _T("Default"), value, 64, path);
+	GetPrivateProfileString(name.c_str(), _T("ExtendFrameIntoClientArea"), _T("False"), value, 64, path);
 	if (!_tcscmp(value, _T("False")))
 		Extend = FALSE;
 	else if (!_tcscmp(value, _T("True")))
 		Extend = TRUE;
+	else
+		Extend = FALSE;
 
-	GetPrivateProfileString(_T("global"), _T("CornerPreference"), _T("Default"), value, 64, path);
+	GetPrivateProfileString(name.c_str(), _T("CornerPreference"), _T("Default"), value, 64, path);
 	if (!_tcscmp(value, _T("Default")))
 		DefCor = TRUE;
 	else if (!_tcscmp(value, _T("Square")))
@@ -265,16 +282,14 @@ void UpdateConfig()
 		Round = TRUE;
 	else if (!_tcscmp(value, _T("RoundedSmall")))
 		SRound = TRUE;
+	else
+	{
+		Square = FALSE;
+		Round = FALSE;
+		SRound = FALSE;
+		DefCor = TRUE;
+	}
 }
-std::wstring widen(const std::string& str)
-{
-	std::wostringstream wstm;
-	const std::ctype<wchar_t>& ctfacet = std::use_facet<std::ctype<wchar_t>>(wstm.getloc());
-	for (size_t i = 0; i < str.size(); ++i)
-		wstm << ctfacet.widen(str[i]);
-	return wstm.str();
-}
-
 void EnableDebugPriv()
 {
 	HANDLE hToken;
@@ -293,38 +308,62 @@ void EnableDebugPriv()
 
 	CloseHandle(hToken);
 }
+void ApplyRule(int DarkThemeEnabled, int type, HWND hwnd, Window window)
+{
+	if (Extend)
+		DwmExtendFrameIntoClientArea(window.GetHwnd(), &margins);
+	else if (SysCol)
+		ApplyDarkTitleBar(window.GetHwnd(), DarkThemeEnabled);
+	else if (Light)
+		ApplyDarkTitleBar(window.GetHwnd(), FALSE);
+	else if (Dark)
+		ApplyDarkTitleBar(window.GetHwnd(), TRUE);
+	else if (None)
+		ApplyNoMaterial(window.GetHwnd());
+	else if (Mica)
+		ApplyMica(window.GetHwnd());
+	else if (Acrylic)
+		ApplyAcrylic(window.GetHwnd());
+	else if (Tabbed)
+		ApplyTabbed(window.GetHwnd());
+	else if (DefaultBack)
+		ApplyDefaultMaterial(window.GetHwnd());
+	else if (DefCor)
+		SetWindowRoundPreference(window.GetHwnd(), DWMWCP_DEFAULT);
+	else if (Square)
+		SetWindowRoundPreference(window.GetHwnd(), DWMWCP_DONOTROUND);
+	else if (Round)
+		SetWindowRoundPreference(window.GetHwnd(), DWMWCP_ROUND);
+	else if (SRound)
+		SetWindowRoundPreference(window.GetHwnd(), DWMWCP_ROUNDSMALL);
+}
 void MatchAndApplyRule(int DarkThemeEnabled, int type, HWND hwnd)
 {
+	std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+	BOOL match = FALSE;
 	if (type == 1)
 	{
 		for (const Window& window : hwndlist)
 		{
-			if (Extend)
-				DwmExtendFrameIntoClientArea(window.GetHwnd(), &margins);
-			else if (SysCol)
-				ApplyDarkTitleBar(window.GetHwnd(), DarkThemeEnabled);
-			else if (Light)
-				ApplyDarkTitleBar(window.GetHwnd(), FALSE);
-			else if (Dark)
-				ApplyDarkTitleBar(window.GetHwnd(), TRUE);
-			else if (None)
-				ApplyNoMaterial(window.GetHwnd());
-			else if (Mica)
-				ApplyMica(window.GetHwnd());
-			else if (Acrylic)
-				ApplyAcrylic(window.GetHwnd());
-			else if (Tabbed)
-				ApplyTabbed(window.GetHwnd());
-			else if (DefaultBack)
-				ApplyDefaultMaterial(window.GetHwnd());
-			else if (DefCor)
-				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_DEFAULT);
-			else if (Square)
-				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_DONOTROUND);
-			else if (Round)
-				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_ROUND);
-			else if (SRound)
-				SetWindowRoundPreference(window.GetHwnd(), DWMWCP_ROUNDSMALL);
+			for (std::string string : rulelist)
+			{
+				std::wstring wide = converter.from_bytes(string);
+				if (wide.find(window.GetProcName()) != std::string::npos)
+				{
+					match = TRUE;
+					UpdateConfig(wide);
+					ApplyRule(DarkThemeEnabled, type, hwnd, window);
+					Window newwin(window.GetHwnd(), window.GetPid(), window.GetProcName());
+					// figure out how to remove this from the list
+				}
+				else if (wide.find(window.GetProcName()) == std::string::npos)
+				{
+					match = FALSE;
+					UpdateConfig(L"global");
+					MessageBox(0, window.GetProcName().c_str(), 0, 0);
+					ApplyRule(DarkThemeEnabled, type, hwnd, window);
+				}
+			}
 		}
 	}
 	else if (type == 2)
